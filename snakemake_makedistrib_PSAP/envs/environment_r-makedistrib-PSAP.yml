@@ -1,0 +1,13 @@
+name: r-apply-PSAP
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::bedtools
+  - conda-forge::r-stringr
+  - conda-forge::r-data.table
+  - conda-forge::r-dplyr
+  - conda-forge::r-splitstackshape
+  - conda-forge::r-tidyr
+  - conda-forge::r-r.utils
+prefix: /PROGS/conda/msogloblinsky/envs/r-apply-PSAP

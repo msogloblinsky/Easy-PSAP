@@ -1,0 +1,208 @@
+import pandas as pd
+from pathlib import Path
+import os
+from snakemake.utils import min_version
+##### set minimum snakemake version #####
+min_version("7.19.1")
+
+class ansitxt:
+    RED = '\033[31m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+def warning(msg):
+    print(f"\n{ansitxt.BOLD}{ansitxt.RED}{msg}{ansitxt.ENDC}\n",file=sys.stderr)
+
+
+configfile: "config/config.yaml"
+
+WORKINGDIR = config["snakemake_directory"]
+OUTDIR = config["outdir"]
+OUTFILE = config["outfile"]
+
+# sanity checks
+try:
+    vcf = Path(config["vcf"])
+    my_abs_path = vcf.resolve(strict=True)
+except FileNotFoundError:
+    warning(f"ERROR: the vcf file ({config['vcf']}) does not exist. Please see the README file for details. Quitting now.")
+    sys.exit(1)
+
+    
+try:
+    ped = pd.read_table(config["ped"],header=None, sep="\t")
+except FileNotFoundError:
+    warning(f"ERROR: the ped file ({config['ped']}) does not exist. Please see the README file for details. Quitting now.")
+    sys.exit(1)
+    
+
+if config["unit"] not in ["gene","coding_caddregion","caddregion"]:
+    warning(f"ERROR: the selected unit of testing ({config['unit']}) is incorrect. Possible values: gene, cadd_region or coding_cadd_region. \nPlease see the README file for details. Quitting now.")
+    sys.exit(1)
+
+
+if config["indel_file"] == "NA" or Path(config["indel_file"]).is_file() == False:
+    warning("WARNING: No InDel file provided or InDel file does not exist. PSAP calculations will proceed without scoring InDels")
+    
+
+IDS= (ped.iloc[:,[1]].squeeze()).tolist()
+
+
+rule all:
+    input:
+        expand("{input_folder}/annotated/{outfile}_{samples}_PSAP.txt.gz",samples=IDS, input_folder=config["outdir"], outfile=config["outfile"]),
+        f"{OUTDIR}/annotated/{OUTFILE}.report.txt"       
+
+rule filter_regions:
+    input:
+        qc_vcf = config["vcf"]
+    output:
+        file = f"{OUTDIR}/{OUTFILE}_sortedfiltered_coverage.vcf.gz"
+    params:
+        script = f"{WORKINGDIR}src/filter_regionsgnomad_vcf_PSAP.sh",
+        coverage = config["coverage"],
+        outdir=config["outdir"],
+        outfile= config["outfile"]
+    conda:  f"{WORKINGDIR}envs/environment_tools-apply-PSAP.yaml"
+    log:     
+        f"{OUTDIR}/log/rule_filter_regions.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_filter_regions.benchmark.txt"
+    shell:
+        """
+        mkdir -p {params.outdir}
+        mkdir -p {params.outdir}/log
+        {params.script} {input.qc_vcf} {params.coverage} {params.outdir} {params.outfile} &> {log}
+        """
+        
+rule write_column_names:
+    input:
+        file = f"{OUTDIR}/{OUTFILE}_sortedfiltered_coverage.vcf.gz"
+    output:
+        f"{OUTDIR}/{OUTFILE}.header"
+    params:
+        outdir = config["outdir"], 
+        outfile= config["outfile"]
+    conda:  f"{WORKINGDIR}envs/environment_tools-apply-PSAP.yaml"
+    log:     
+        f"{OUTDIR}/log/rule_write_column_names.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_write_column_names.benchmark.txt"
+    shell:
+        """
+        bcftools view -h {input.file} | tail -n 1 > {params.outdir}/{params.outfile}.header 2> {log}
+        """
+
+rule vep_annotation: 
+    input:
+        filtered_vcf = f"{OUTDIR}/{OUTFILE}_sortedfiltered_coverage.vcf.gz"
+    output:
+        f"{OUTDIR}/annotated/{OUTFILE}.vep.tsv.gz"
+    params:
+        vep_cache = config["vep_cache"],
+        vep_cache_merged = config["vep_cache_merged"],
+        vep_fasta = config["vep_fasta"],
+        outdir = config["outdir"],
+        outfile= config["outfile"],
+        unit = config["unit"],
+        cadd_path = config["cadd_path"],
+        cadd_version = config["cadd_version"],
+        genes = config["genes"],
+        cadd_regions = config["cadd_regions"],
+        assembly= config["assembly"]
+    conda:  f"{WORKINGDIR}envs/environment_ensemblvep107.yaml"
+    log:     
+        f"{OUTDIR}/log/rule_vep_annotation.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_vep_annotation.benchmark.txt"
+    threads: 20
+    resources:
+        mem = 25000
+    script:
+        f"{WORKINGDIR}src/VEP_annotation_vcf_PSAP.sh"
+        
+
+rule filter_variants:
+    input:
+        vep_file = f"{OUTDIR}/annotated/{OUTFILE}.vep.tsv.gz"
+    output:
+        f"{OUTDIR}/annotated/filtered_{OUTFILE}.vep.tsv.gz"
+    params:
+        script = f"{WORKINGDIR}src/filter_notpassvariants_PSAP.R",
+        outfile = config["outfile"],
+        outdir = config["outdir"],
+        variants_exclude = config["variants_exclude"]
+    conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
+    log:     
+        f"{OUTDIR}/log/rule_filter_variants.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_filter_variants.benchmark.txt"
+    shell:
+        """
+        Rscript {params.script} {params.outfile} {params.outdir} {params.variants_exclude} &> {log}
+        """
+
+rule apply_PSAP_calculations:
+    input:
+        filtered_vcf = f"{OUTDIR}/{OUTFILE}_sortedfiltered_coverage.vcf.gz",
+        vep_file = f"{OUTDIR}/annotated/filtered_{OUTFILE}.vep.tsv.gz",
+        header = f"{OUTDIR}/{OUTFILE}.header"
+    output:
+        f"{OUTDIR}/annotated/{OUTFILE}_{{samples}}_PSAP.txt"
+    params:
+        script = f"{WORKINGDIR}src/rscript_individual_PSAP.R",
+        outdir = config["outdir"],
+        outfile = config["outfile"],
+        indv = "{samples}",
+        dirPSAP = config["snakemake_directory"],
+        ped = config["ped"],
+        lookup_namefile = config["lookup_namefile"],
+        unit = config["unit"],
+        indel_file = config["indel_file"],
+        vep_cache_merged = config["vep_cache_merged"]
+    conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
+    log:     
+        f"{OUTDIR}/log/rule_apply_PSAP_calculations_{{samples}}.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_apply_PSAP_calculations_{{samples}}.benchmark.txt"
+    shell:
+        """
+        Rscript {params.script} {params.outfile} {params.outdir} {params.indv} {params.dirPSAP} {params.ped} {input.filtered_vcf} {params.lookup_namefile} {params.unit} {params.vep_cache_merged} {params.indel_file} &> {log}
+        """           
+        
+rule make_report_file:
+    input: 
+        PSAP_ind_files = expand("{input_folder}/annotated/{outfile}_{samples}_PSAP.txt",samples=IDS, input_folder=config["outdir"], outfile=config["outfile"])
+    output:
+        f"{OUTDIR}/annotated/{OUTFILE}.report.txt"
+    params:
+        script = f"{WORKINGDIR}src/rscript_report_PSAP.R",
+        outdir = config["outdir"],
+        outfile = config["outfile"],
+        ped = config["ped"],
+        unit = config["unit"]
+    conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
+    log:     
+        f"{OUTDIR}/log/rule_make_report_file.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_make_report_file.benchmark.txt"
+    shell:
+        """
+        Rscript {params.script} {params.outfile} {params.ped} {params.outdir} {params.unit} &> {log}
+        """
+
+rule compress_output_files:
+    input:
+        output_files = f"{OUTDIR}/annotated/{OUTFILE}_{{samples}}_PSAP.txt",
+        report_file = f"{OUTDIR}/annotated/{OUTFILE}.report.txt"
+    output:
+        f"{OUTDIR}/annotated/{OUTFILE}_{{samples}}_PSAP.txt.gz"       
+    conda:  f"{WORKINGDIR}envs/environment_tools-apply-PSAP.yaml"
+    log:     
+        f"{OUTDIR}/log/rule_compress_output_files_{{samples}}.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_compress_output_files_{{samples}}.benchmark.txt"
+    shell:
+        """
+        bgzip {input.output_files} &> {log}
+        """

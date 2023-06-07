@@ -1,0 +1,9 @@
+name: tools-apply-PSAP
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::tabix
+  - bioconda::bcftools
+  - anaconda::openssl=1.0
+prefix: /PROGS/conda/msogloblinsky/envs/tools-apply-PSAP

@@ -1,0 +1,10 @@
+name: tools-makedistrib-PSAP
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::tabix
+  - bioconda::bedtools
+  - bioconda::bcftools
+  - anaconda::openssl=1.0
+prefix: /PROGS/conda/msogloblinsky/envs/tools-apply-PSAP

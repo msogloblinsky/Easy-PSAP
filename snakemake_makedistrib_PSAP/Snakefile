@@ -1,0 +1,216 @@
+from pathlib import Path
+import os
+from snakemake.utils import min_version
+##### set minimum snakemake version #####
+min_version("7.19.1")
+
+class ansitxt:
+    RED = '\033[31m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+
+def warning(msg):
+    print(f"\n{ansitxt.BOLD}{ansitxt.RED}{msg}{ansitxt.ENDC}\n",file=sys.stderr)
+    
+configfile: "config/config.yaml"
+
+CHR = list(range(1, 23))
+WORKINGDIR = config["snakemake_directory"]
+OUTDIR = config["outdir"]
+OUTFILE = config["outfile"]
+SCORE_PREFIX = config["score_prefix"]
+AF_PREFIX = config["af_prefix"] 
+
+
+# sanity checks
+try:
+    cadd_file = Path(config["cadd_file"])
+    my_abs_path = cadd_file.resolve(strict=True)
+except FileNotFoundError:
+    warning(f"ERROR: the pathogenicity score file ({config['cadd_file']}) does not exist. Please see the README file for details. Quitting now.")
+    sys.exit(1)
+
+
+try:
+    allele_frequencies = Path(config["allele_frequencies"])
+    my_abs_path = allele_frequencies.resolve(strict=True)
+except FileNotFoundError:
+    warning(f"ERROR: the allele frequencies file ({config['allele_frequencies']}) does not exist. Please see the README file for details. Quitting now.")
+    sys.exit(1)
+    
+
+if config["units"] not in ["gene","coding_caddregion","caddregion"]:
+    warning(f"ERROR: the selected unit of testing ({config['units']}) is incorrect. Possible values: gene, cadd_region or coding_cadd_region. \nPlease see the README file for details. Quitting now.")
+    sys.exit(1)
+    
+units = config["units"]
+
+rule all:
+    input:
+        expand("{output_dir}/final_lookuptables_PSAP/{outfile}_{units}_het.txt",units=units, output_dir=config["outdir"],outfile=config["outfile"]),
+        expand("{output_dir}/final_lookuptables_PSAP/{outfile}_{units}_hom.txt",units=units, output_dir=config["outdir"],outfile=config["outfile"])
+
+rule split_multiallelic_panel:
+    input:
+        file_allele_frequencies = config["allele_frequencies"]
+    output:
+        f"{OUTDIR}/reference_panel/af_forPSAP_splitmultial_{AF_PREFIX}_chr{{CHR}}.vcf.gz"
+    params:
+        outdir = config["outdir"],
+        af_prefix = config["af_prefix"],
+        chr = "{CHR}"
+    conda:  f"{WORKINGDIR}/envs/environment_tools-makedistrib-PSAP.yml"
+    log:     
+        f"{OUTDIR}/log/rule_split_multiallelic_panel_{AF_PREFIX}_chr{{CHR}}.log"
+    benchmark:
+        f"{OUTDIR}/benchmark/rule_split_multiallelic_panel_{AF_PREFIX}_chr{{CHR}}.benchmark.txt"
+    shell:
+        """
+        mkdir -p {params.outdir}/log
+        mkdir -p {params.outdir}/reference_panel
+        bcftools view --regions {params.chr} {input.file_allele_frequencies} | bcftools norm --multiallelics - | bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz
+        tabix {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz 2> {log}
+        """
+
+
+rule make_allele_frequencies_file:
+    input:
+        file_allele_frequencies_split = f"{OUTDIR}/reference_panel/af_forPSAP_splitmultial_{AF_PREFIX}_chr{{CHR}}.vcf.gz"
+    output:
+        f"{OUTDIR}/reference_panel/af_forPSAP_splitmultial_{AF_PREFIX}_goodquality_pass_snps_chr{{CHR}}.vcf.gz"
+    params:
+        coverage = config["coverage"],
+        outdir = config["outdir"],
+        af_prefix = config["af_prefix"],
+        chr = "{CHR}"
+    conda:  f"{WORKINGDIR}/envs/environment_tools-makedistrib-PSAP.yml"
+    log:     
+        f"{OUTDIR}/log/rule_make_allele_frequencies_file_{AF_PREFIX}_chr{{CHR}}.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_make_allele_frequencies_file_{AF_PREFIX}_chr{{CHR}}.benchmark.txt"        
+    shell:
+        """
+        bcftools view -i 'FILTER=="PASS"' --regions-file {params.coverage} --types snps {input.file_allele_frequencies_split} | 
+        bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%AC\n' |
+        bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_goodquality_pass_snps_chr{params.chr}.vcf.gz 2> {log}
+        """
+
+rule make_notpassvariants_file:
+    input:
+        file_allele_frequencies_split = f"{OUTDIR}/reference_panel/af_forPSAP_splitmultial_{AF_PREFIX}_chr{{CHR}}.vcf.gz"
+    output:
+        f"{OUTDIR}/reference_panel/af_forPSAP_splitmultial_{AF_PREFIX}_notpass_snps_chr{{CHR}}.vcf.gz"
+    params:
+        coverage = config["coverage"],
+        outdir = config["outdir"],
+        af_prefix = config["af_prefix"],
+        chr = "{CHR}"        
+    conda:  f"{WORKINGDIR}/envs/environment_tools-makedistrib-PSAP.yml"
+    log:     
+        f"{OUTDIR}/log/rule_make_notpassvariants_file_{AF_PREFIX}_chr{{CHR}}.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_make_notpassvariants_file_{AF_PREFIX}_chr{{CHR}}.benchmark.txt"
+    shell:
+        """
+        bcftools view --types snps --exclude 'FILTER=="PASS"' {input.file_allele_frequencies_split} | bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\n' | 
+        bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_notpass_snps_chr{params.chr}.vcf.gz 2> {log}
+        """
+        
+rule list_units_wellcovered_panel:
+    input:
+        genes = config["genes"],
+        cadd_regions = config["cadd_regions"],
+        coding_cadd_regions = config["coding_cadd_regions"],
+        coverage = config["coverage"]
+    output:
+        expand("{output_dir}/reference_panel/list_goodcoverage_50pct_{units}.bed",units=units, output_dir=config["outdir"])
+    params:
+        script = f"{WORKINGDIR}/src/script_list_units_goodcoverage.R",
+        outdir = config["outdir"]
+    conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
+    log:     
+        f"{OUTDIR}/log/rule_list_units_wellcovered_panel.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_list_units_wellcovered_panel.benchmark.txt"
+    shell:
+        """
+        bedmap --bases-uniq-f --echo --delim '\t' {input.genes} {input.coverage} > {params.outdir}/reference_panel/coverage_gene.bed
+        bedmap --bases-uniq-f --echo --delim '\t' {input.coding_cadd_regions} {input.coverage} > {params.outdir}/reference_panel/coverage_coding_caddregion.bed
+        bedmap --bases-uniq-f --echo --delim '\t' {input.cadd_regions} {input.coverage} > {params.outdir}/reference_panel/coverage_caddregion.bed
+
+        Rscript {params.script} {params.outdir} &> {log}
+        """
+        
+rule make_input_table_forPSAP:
+    input:
+        cadd_file = config["cadd_file"],
+        genes = config["genes"],
+        cadd_regions = config["cadd_regions"],
+        coverage = config["coverage"]
+    output:
+        f"{OUTDIR}/score_tables/coverage_genes_caddregions_{SCORE_PREFIX}_chr{{CHR}}.tsv.gz"
+    params:
+        script = f"{WORKINGDIR}/src/script_make_input_table_forPSAP.sh",
+        outdir = config["outdir"],
+        score_prefix = config["score_prefix"],
+        chr = "{CHR}"                
+    conda:  f"{WORKINGDIR}/envs/environment_tools-makedistrib-PSAP.yml"
+    log:     
+        f"{OUTDIR}/log/rule_make_input_table_forPSAP_{SCORE_PREFIX}_chr{{CHR}}.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_make_input_table_forPSAP_{SCORE_PREFIX}_chr{{CHR}}.benchmark.txt"
+    shell:
+        """
+        mkdir -p {params.outdir}/score_tables/ 
+        {params.script} {input.cadd_file} {input.genes} {input.cadd_regions} {input.coverage} {params.outdir} {params.score_prefix} {params.chr} &> {log}
+        """
+        
+rule calculate_null_distributions_PSAP:
+    input:
+        score_tables = f"{OUTDIR}/score_tables/coverage_genes_caddregions_{SCORE_PREFIX}_chr{{CHR}}.tsv.gz",
+        allele_frequencies_files = f"{OUTDIR}/reference_panel/af_forPSAP_splitmultial_{AF_PREFIX}_goodquality_pass_snps_chr{{CHR}}.vcf.gz",
+        notpass_variants = f"{OUTDIR}/reference_panel/af_forPSAP_splitmultial_{AF_PREFIX}_notpass_snps_chr{{CHR}}.vcf.gz"
+    output:
+        f"{OUTDIR}/temp_lookup_bychr/{OUTFILE}_{{units}}_het_chr{{CHR}}.txt",
+        f"{OUTDIR}/temp_lookup_bychr/{OUTFILE}_{{units}}_hom_chr{{CHR}}.txt"
+    params:
+        script = f"{WORKINGDIR}/src/script_calculate_lookup_PSAP_bychr.R",
+        unit = "{units}",
+        outdir = config["outdir"],
+        outfile = config["outfile"],
+        chr = "{CHR}"
+    conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
+    log:     
+        f"{OUTDIR}/log/rule_calculate_null_distributions_PSAP_{{units}}_chr{{CHR}}.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_calculate_null_distributions_PSAP_{{units}}_chr{{CHR}}.benchmark.txt"
+    shell:
+        """
+        mkdir -p {params.outdir}/temp_lookup_bychr/
+        Rscript {params.script} {input.score_tables} {input.allele_frequencies_files} {input.notpass_variants} {params.unit} {params.outdir} {params.outfile} {params.chr} &> {log}
+        """
+        
+rule make_final_null_distributions_PSAP:
+    input:
+        lookup_bychr_het  = expand("{output_dir}/temp_lookup_bychr/{outfile}_{{units}}_het_chr{chr}.txt",output_dir=config["outdir"],chr=CHR, outfile=config["outfile"]),
+        lookup_bychr_hom = expand("{output_dir}/temp_lookup_bychr/{outfile}_{{units}}_hom_chr{chr}.txt",output_dir=config["outdir"],chr=CHR, outfile=config["outfile"]),
+        list_units = f"{OUTDIR}/reference_panel/list_goodcoverage_50pct_{{units}}.bed"
+    output:
+        f"{OUTDIR}/final_lookuptables_PSAP/{OUTFILE}_{{units}}_het.txt",
+        f"{OUTDIR}/final_lookuptables_PSAP/{OUTFILE}_{{units}}_hom.txt"
+    params:
+        script = f"{WORKINGDIR}/src/script_make_lookup_PSAP_final.R",
+        unit = "{units}",
+        outdir = config["outdir"],
+        outfile = config["outfile"]
+    conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
+    log:     
+        f"{OUTDIR}/log/rule_make_final_null_distributions_PSAP_{OUTFILE}_{{units}}.log"
+    benchmark:     
+        f"{OUTDIR}/benchmark/rule_make_final_null_distributions_PSAP_{OUTFILE}_{{units}}.benchmark.txt"
+    shell:
+        """
+        mkdir -p {params.outdir}/final_lookuptables_PSAP/
+        Rscript {params.script} {input.list_units} {params.unit} {params.outdir} {params.outfile} &> {log}
+        """
+
