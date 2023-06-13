@@ -43,12 +43,13 @@ This process can be done using a tool like [VCFprocessor](https://lysine.univ-br
 like the [R package RAVAQ](https://gitlab.com/gmarenne/ravaq). We provide a script optional/qc_vcf.R to perform the recommended QC anf formatting for the vcf file. The script can be run using the command:
 
 ```
-	Rscript qc_vcf.R {vcf} {ped} {outfile} {outdir}
+Rscript qc_vcf.R {vcf} {ped} {outfile} {outdir}
 ```
 
 For the coverage file, the command line used to get the bed file provided for gnomAD genome V2 (good coverage = 90% of individuals at dp10) was:
+
 ```
-	zcat gnomad.genomes.r2.0.1.coverage.txt.gz | tail -n+2 | awk '{print $1"\t"($2-1)"\t"$2"\t"$7}' > gnomad.genome.r2.0.1.dp10.bed
+zcat gnomad.genomes.r2.0.1.coverage.txt.gz | tail -n+2 | awk '{print $1"\t"($2-1)"\t"$2"\t"$7}' > gnomad.genome.r2.0.1.dp10.bed
 ```
 
 The chosen lookup table for PSAP null distributions has to match the "unit" and "cadd_version" specified in the configuration file. Already calculated lookup tables include : 
@@ -58,9 +59,10 @@ The chosen lookup table for PSAP null distributions has to match the "unit" and 
 Available PSAP null distributions have used gnomAD V2 genome for allele frequencies calibration (AF specifically) and CADD v1.6 for the pathogenicity score, all in GRCh37.
 
 For the CADD files, the path and version need to lead to the following files:
+
 ```
-	{cadd_path}/CADD_v{cadd_version}/whole_genome_SNVs.tsv.gz
-	{cadd_path}/CADD_v{cadd_version}/InDels.tsv.gz
+{cadd_path}/CADD_v{cadd_version}/whole_genome_SNVs.tsv.gz
+{cadd_path}/CADD_v{cadd_version}/InDels.tsv.gz
 ```
 The formats of the [CADD files](https://cadd.gs.washington.edu/download) are currently supported. Files need to be indexed.
 
@@ -68,7 +70,7 @@ The file with InDels anotated by CADD is optional. If no file is provided, InDel
 The script optional/make_indel_file_forcadd.sh can be used to generate input file with InDels to upload to the CADD website in the correct format. The script can be run using the following command 
 (bcftools and tabix need to be installed in the environement for this command to work):
 ```
-	make_indel_file_forcadd.sh {vcf} {outfile} {outdir}
+make_indel_file_forcadd.sh {vcf} {outfile} {outdir}
 ```
 
 > TIP: different analyses can be run using the same repository. This is achieved by changing the outdir and outfile in the configuration file. Also different parameters values can be used in the different analyses.
@@ -79,7 +81,7 @@ The Snakemake relies on conda environements which contain all the necessary depe
 This step is easily done using the following command line:
 
 ```
-    snakemake --use-conda --conda-create-envs-only --conda-frontend conda
+snakemake --use-conda --conda-create-envs-only --conda-frontend conda
 ```
 
 ### 3. Run the pipeline.
@@ -87,7 +89,7 @@ This step is easily done using the following command line:
 Once the pipeline is configured and conda environments are created, the user just needs to run the Snakemake pipeline to score the vcf file with PSAP:
 
 ```
-    snakemake --use-conda -j 20 
+snakemake --use-conda -j 20 
 ```
 
 The mandatory arguments are:

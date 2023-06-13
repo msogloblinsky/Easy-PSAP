@@ -44,7 +44,7 @@ The Snakemake relies on conda environements which contain all the necessary depe
 This step is easily done using the following command line:
 
 ```
-    snakemake --use-conda --conda-create-envs-only --conda-frontend conda -j 1
+snakemake --use-conda --conda-create-envs-only --conda-frontend conda -j 1
 ```
 
 ### 3. Run the pipeline.
@@ -52,7 +52,7 @@ This step is easily done using the following command line:
 Once the pipeline is configured and conda environments are created, the user just needs to run Snakemake pipeline to make PSAP null distributions:
 
 ```
-    snakemake --use-conda -j 22 
+snakemake --use-conda -j 22 
 ```
 
 The mandatory arguments are:
@@ -78,12 +78,12 @@ The vcf file with allele frequencies from the reference database is split by chr
 The allele frequency files created at the previous step are processed by default to keep only PASS SNVs, in well-covered regions of the database for the calculation of PSAP null distributions. 
 If other filtering needs to be applied, or all filtering removed (no column `FILTER` in the input vcf), the following line can be modified in the Snakefile:
 ```
-	bcftools view -i 'FILTER=="PASS"' --regions-file {params.coverage} --types snps {input.file_allele_frequencies_split}
+bcftools view -i 'FILTER=="PASS"' --regions-file {params.coverage} --types snps {input.file_allele_frequencies_split}
 ```
 The vcf input file needs to have the columns `CHROM`, `POS`, `REF`, `ALT`, `CHROM`, `AF`, `AC` which will be kept in the output files. If any column has a different name or if another column needs to be used for allele frequencies,
 the following line in the Snakefile can be modified:
 ```
-	bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%AC\n'
+bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%AC\n'
 ```
 Output located in `{outdir}/reference_panel`.
 

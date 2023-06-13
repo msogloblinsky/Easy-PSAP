@@ -35,8 +35,23 @@ Snakemake can then be installed through conda, as described in the [Snakemake in
 Git clone command can be used to create a local copy of Easy-PSAP:
 
 ```
-	git clone https://github.com/msogloblinsky/Easy-PSAP.git
+git clone https://github.com/msogloblinsky/Easy-PSAP.git
 ```
+
+### Download large files for to run **snakemake_apply_PSAP**
+
+Files too large to be hosted on GitHub can be dowloaded via this [link](https://lysine.univ-brest.fr/~msogloblinsky/share/). They are separated in two folders `example` and `data` that can directly be added to the `/snakemake_apply_PSAP/` folder to obtain the following configuration:
+
+├── snakemake_apply_PSAP
+│   ├── example
+│   ├── data
+│   ├── config
+│   ├── slurm
+│   ├── optional
+│   ├── src
+│   ├── envs
+│   ├── README.md
+│   └── Snakefile
 
 Specific instructions to run each of the two pipeline can be found in their README.md file.
 
@@ -58,6 +73,7 @@ Brest, FRANCE
 ## Acknowledgments 
 
 Cloé Moëlo for creating the logos
+
 Gaëlle Marenne for testing the pipeline
 
 ___
