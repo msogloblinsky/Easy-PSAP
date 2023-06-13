@@ -43,14 +43,23 @@ git clone https://github.com/msogloblinsky/Easy-PSAP.git
 Files too large to be hosted on GitHub can be dowloaded via this [link](https://lysine.univ-brest.fr/~msogloblinsky/share/). They are separated in two folders `example` and `data` that can directly be added to the `/snakemake_apply_PSAP/` folder to obtain the following configuration:
 
 ├── snakemake_apply_PSAP
+
 │   ├── example
+
 │   ├── data
+
 │   ├── config
+
 │   ├── slurm
+
 │   ├── optional
+
 │   ├── src
+
 │   ├── envs
+
 │   ├── README.md
+
 │   └── Snakefile
 
 Specific instructions to run each of the two pipeline can be found in their README.md file.
@@ -66,7 +75,7 @@ Specific instructions to run each of the two pipeline can be found in their READ
 
 For any inquiries, please contact:
 Marie-Sophie Ogloblinsky
-mariesophie.ogloblinsky@gmail.com
+marie-sophie.ogloblinsky@inserm.fr
 UMR INSERM 1078 Genetic Functional Genomics and Biotechnologies 
 Brest, FRANCE
 
