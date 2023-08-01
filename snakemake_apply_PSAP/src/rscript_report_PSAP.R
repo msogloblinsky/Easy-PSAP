@@ -57,7 +57,7 @@ if(length(which(ped$V6==1)) > 0){
 	print("validating against unrelated individuals")
 	uf.dat = data.frame()
 	for(i in uf){
-		dat<-fread(file=paste(outdir,"/annotated/",cohort.id,"_",i,"_PSAP.txt",sep=""),sep="\t",header=T,stringsAsFactors=F,check.names=F,data.table=F)
+		dat<-fread(file=paste(outdir,"/annotated/",outfile,"_",i,"_PSAP.txt",sep=""),sep="\t",header=T,stringsAsFactors=F,check.names=F,data.table=F)
 		uf.dat = rbind(uf.dat,dat)
 	}
 	if(unit_testing %in% c("cadd_region","coding_cadd_region")){

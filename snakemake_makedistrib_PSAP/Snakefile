@@ -39,7 +39,7 @@ except FileNotFoundError:
     sys.exit(1)
     
 
-if config["units"] not in ["gene","coding_caddregion","caddregion"]:
+if config["units"] not in ["gene","coding_cadd_region","cadd_region"]:
     warning(f"ERROR: the selected unit of testing ({config['units']}) is incorrect. Possible values: gene, cadd_region or coding_cadd_region. \nPlease see the README file for details. Quitting now.")
     sys.exit(1)
     
@@ -181,9 +181,9 @@ rule calculate_null_distributions_PSAP:
         chr = "{CHR}"
     conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
     log:     
-        f"{OUTDIR}/log/rule_calculate_null_distributions_PSAP_{{units}}_chr{{CHR}}.log"
+        f"{OUTDIR}/log/rule_calculate_null_distributions_PSAP_{OUTFILE}_{{units}}_chr{{CHR}}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_calculate_null_distributions_PSAP_{{units}}_chr{{CHR}}.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_calculate_null_distributions_PSAP_{OUTFILE}_{{units}}_chr{{CHR}}.benchmark.txt"
     shell:
         """
         mkdir -p {params.outdir}/temp_lookup_bychr/

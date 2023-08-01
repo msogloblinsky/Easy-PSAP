@@ -36,7 +36,7 @@ except FileNotFoundError:
     sys.exit(1)
     
 
-if config["unit"] not in ["gene","coding_caddregion","caddregion"]:
+if config["unit"] not in ["gene","coding_cadd_region","cadd_region"]:
     warning(f"ERROR: the selected unit of testing ({config['unit']}) is incorrect. Possible values: gene, cadd_region or coding_cadd_region. \nPlease see the README file for details. Quitting now.")
     sys.exit(1)
 
@@ -65,9 +65,9 @@ rule filter_regions:
         outfile= config["outfile"]
     conda:  f"{WORKINGDIR}envs/environment_tools-apply-PSAP.yaml"
     log:     
-        f"{OUTDIR}/log/rule_filter_regions.log"
+        f"{OUTDIR}/log/rule_filter_regions_{OUTFILE}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_filter_regions.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_filter_regions_{OUTFILE}.benchmark.txt"
     shell:
         """
         mkdir -p {params.outdir}
@@ -85,9 +85,9 @@ rule write_column_names:
         outfile= config["outfile"]
     conda:  f"{WORKINGDIR}envs/environment_tools-apply-PSAP.yaml"
     log:     
-        f"{OUTDIR}/log/rule_write_column_names.log"
+        f"{OUTDIR}/log/rule_write_column_names_{OUTFILE}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_write_column_names.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_write_column_names_{OUTFILE}.benchmark.txt"
     shell:
         """
         bcftools view -h {input.file} | tail -n 1 > {params.outdir}/{params.outfile}.header 2> {log}
@@ -112,9 +112,9 @@ rule vep_annotation:
         assembly= config["assembly"]
     conda:  f"{WORKINGDIR}envs/environment_ensemblvep107.yaml"
     log:     
-        f"{OUTDIR}/log/rule_vep_annotation.log"
+        f"{OUTDIR}/log/rule_vep_annotation_{OUTFILE}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_vep_annotation.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_vep_annotation_{OUTFILE}.benchmark.txt"
     threads: 20
     resources:
         mem = 25000
@@ -134,9 +134,9 @@ rule filter_variants:
         variants_exclude = config["variants_exclude"]
     conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
     log:     
-        f"{OUTDIR}/log/rule_filter_variants.log"
+        f"{OUTDIR}/log/rule_filter_variants_{OUTFILE}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_filter_variants.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_filter_variants_{OUTFILE}.benchmark.txt"
     shell:
         """
         Rscript {params.script} {params.outfile} {params.outdir} {params.variants_exclude} &> {log}
@@ -162,9 +162,9 @@ rule apply_PSAP_calculations:
         vep_cache_merged = config["vep_cache_merged"]
     conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
     log:     
-        f"{OUTDIR}/log/rule_apply_PSAP_calculations_{{samples}}.log"
+        f"{OUTDIR}/log/rule_apply_PSAP_calculations_{OUTFILE}_{{samples}}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_apply_PSAP_calculations_{{samples}}.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_apply_PSAP_calculations_{OUTFILE}_{{samples}}.benchmark.txt"
     shell:
         """
         Rscript {params.script} {params.outfile} {params.outdir} {params.indv} {params.dirPSAP} {params.ped} {input.filtered_vcf} {params.lookup_namefile} {params.unit} {params.vep_cache_merged} {params.indel_file} &> {log}
@@ -183,9 +183,9 @@ rule make_report_file:
         unit = config["unit"]
     conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
     log:     
-        f"{OUTDIR}/log/rule_make_report_file.log"
+        f"{OUTDIR}/log/rule_make_report_file_{OUTFILE}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_make_report_file.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_make_report_file_{OUTFILE}.benchmark.txt"
     shell:
         """
         Rscript {params.script} {params.outfile} {params.ped} {params.outdir} {params.unit} &> {log}
@@ -199,9 +199,9 @@ rule compress_output_files:
         f"{OUTDIR}/annotated/{OUTFILE}_{{samples}}_PSAP.txt.gz"       
     conda:  f"{WORKINGDIR}envs/environment_tools-apply-PSAP.yaml"
     log:     
-        f"{OUTDIR}/log/rule_compress_output_files_{{samples}}.log"
+        f"{OUTDIR}/log/rule_compress_output_files_{OUTFILE}_{{samples}}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_compress_output_files_{{samples}}.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_compress_output_files_{OUTFILE}_{{samples}}.benchmark.txt"
     shell:
         """
         bgzip {input.output_files} &> {log}
