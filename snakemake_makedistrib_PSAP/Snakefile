@@ -14,7 +14,8 @@ def warning(msg):
     
 configfile: "config/config.yaml"
 
-CHR = list(range(1, 23))
+#CHR = list(range(1, 23))
+CHR = list(range(21, 23))
 WORKINGDIR = config["snakemake_directory"]
 OUTDIR = config["outdir"]
 OUTFILE = config["outfile"]
@@ -123,22 +124,23 @@ rule list_units_wellcovered_panel:
         coding_cadd_regions = config["coding_cadd_regions"],
         coverage = config["coverage"]
     output:
-        expand("{output_dir}/reference_panel/list_goodcoverage_50pct_{units}.bed",units=units, output_dir=config["outdir"])
+        expand("{output_dir}/reference_panel/list_goodcoverage_50pct_{units}_{af_prefix}.bed",units=units, output_dir=config["outdir"],af_prefix = config["af_prefix"])
     params:
         script = f"{WORKINGDIR}/src/script_list_units_goodcoverage.R",
-        outdir = config["outdir"]
+        outdir = config["outdir"],
+        af_prefix = config["af_prefix"]
     conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
     log:     
-        f"{OUTDIR}/log/rule_list_units_wellcovered_panel.log"
+        f"{OUTDIR}/log/rule_list_units_wellcovered_panel_{AF_PREFIX}.log"
     benchmark:     
-        f"{OUTDIR}/benchmark/rule_list_units_wellcovered_panel.benchmark.txt"
+        f"{OUTDIR}/benchmark/rule_list_units_wellcovered_panel_{AF_PREFIX}.benchmark.txt"
     shell:
         """
-        bedmap --bases-uniq-f --echo --delim '\t' {input.genes} {input.coverage} > {params.outdir}/reference_panel/coverage_gene.bed
-        bedmap --bases-uniq-f --echo --delim '\t' {input.coding_cadd_regions} {input.coverage} > {params.outdir}/reference_panel/coverage_coding_caddregion.bed
-        bedmap --bases-uniq-f --echo --delim '\t' {input.cadd_regions} {input.coverage} > {params.outdir}/reference_panel/coverage_caddregion.bed
+        bedmap --bases-uniq-f --echo --delim '\t' {input.genes} {input.coverage} > {params.outdir}/reference_panel/coverage_gene_{params.af_prefix}.bed
+        bedmap --bases-uniq-f --echo --delim '\t' {input.coding_cadd_regions} {input.coverage} > {params.outdir}/reference_panel/coverage_coding_cadd_region_{params.af_prefix}.bed
+        bedmap --bases-uniq-f --echo --delim '\t' {input.cadd_regions} {input.coverage} > {params.outdir}/reference_panel/coverage_cadd_region_{params.af_prefix}.bed
 
-        Rscript {params.script} {params.outdir} &> {log}
+        Rscript {params.script} {params.outdir} {params.af_prefix} &> {log}
         """
         
 rule make_input_table_forPSAP:
@@ -194,7 +196,7 @@ rule make_final_null_distributions_PSAP:
     input:
         lookup_bychr_het  = expand("{output_dir}/temp_lookup_bychr/{outfile}_{{units}}_het_chr{chr}.txt",output_dir=config["outdir"],chr=CHR, outfile=config["outfile"]),
         lookup_bychr_hom = expand("{output_dir}/temp_lookup_bychr/{outfile}_{{units}}_hom_chr{chr}.txt",output_dir=config["outdir"],chr=CHR, outfile=config["outfile"]),
-        list_units = f"{OUTDIR}/reference_panel/list_goodcoverage_50pct_{{units}}.bed"
+        list_units = f"{OUTDIR}/reference_panel/list_goodcoverage_50pct_{{units}}_{AF_PREFIX}.bed"
     output:
         f"{OUTDIR}/final_lookuptables_PSAP/{OUTFILE}_{{units}}_het.txt",
         f"{OUTDIR}/final_lookuptables_PSAP/{OUTFILE}_{{units}}_hom.txt"

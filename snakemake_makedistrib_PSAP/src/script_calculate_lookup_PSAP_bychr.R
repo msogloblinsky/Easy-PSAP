@@ -104,8 +104,8 @@ data <- fread(score_tables, data.table=FALSE)
 setnames(data, names(data), c("chr","start","end","ref","alt","cadd_raw","cadd_phred","cadd_region","gene"))
 
 if(units == "gene"){data <- filter(data, gene != ".") ; column_testing="gene"
-}else if(units == "coding_caddregion"){data <- filter(data, gene != ".") ; data <- data[,-9] ; data <- data[!duplicated(data),] ; column_testing="cadd_region"
-}else if(units == "caddregion"){data <- data[,-9] ; data <- distinct_all(data, .keep_all = TRUE) ; column_testing="cadd_region"}
+}else if(units == "coding_cadd_region"){data <- filter(data, gene != ".") ; data <- data[,-9] ; data <- data[!duplicated(data),] ; column_testing="cadd_region"
+}else if(units == "cadd_region"){data <- data[,-9] ; data <- distinct_all(data, .keep_all = TRUE) ; column_testing="cadd_region"}
 
 print(Sys.time()-timeT)
 print("Filtering data")
