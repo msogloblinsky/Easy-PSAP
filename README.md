@@ -71,7 +71,7 @@ For any inquiries, please contact:
 Marie-Sophie Ogloblinsky\
 marie-sophie.ogloblinsky@inserm.fr\
 UMR INSERM 1078 Genetic Functional Genomics and Biotechnologies\
-Brest, FRANCE\
+Brest, FRANCE
 
 ## Acknowledgments 
 

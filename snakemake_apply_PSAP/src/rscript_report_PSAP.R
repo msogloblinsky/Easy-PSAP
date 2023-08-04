@@ -44,8 +44,7 @@ for(m in 1:length(models)){
   if(models[m] == "REC-chet"){
 	tmp <- af.dat[[m]] %>% group_by(chet.id) %>% mutate(pid=paste(pid,collapse=","), n=n() ) %>% distinct(across(-c("pid","chet.id"))) %>% arrange(Key)
   }else{
-    tmp = do.call(rbind,by(af.dat[[m]],af.dat[[m]]$Key, function(dat) return(data.frame(unique(dat[which(names(dat) != "pid")]),pid=paste(unique(dat$pid),collapse=","),n=nrow(dat)))))
-	tmp.1 <- af.dat[[m]] %>% group_by(Key) %>% mutate(pid=paste(pid,collapse=","), n=n() ) %>% distinct(across()) %>% arrange(Key)
+    tmp = do.call(rbind,by(af.dat[[m]],af.dat[[m]]$Key, function(dat) return(data.frame(unique(dat[which(names(dat) != "pid")]),pid=paste(unique(dat$pid),collapse=","),n=length(unique(dat$pid)) ))))
   }
   candidates = rbind(candidates,tmp)
 }

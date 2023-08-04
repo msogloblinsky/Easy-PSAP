@@ -8,7 +8,7 @@ The input data is highly customizable and the use of Snakemake makes it possible
 
 Once the conda environmenet with Snakemake installed is setup and activated, the user can modify the configuration file according to the desired input files and parameters, and run the pipeline.
 The VEP software is used for the vcf file annotation, without the need to install VEP on the machine thanks to the conda package manager. The necessary files for annotation are (cf next paragraph):
-* VEP cache and FASTA
+* VEP cache and FASTA (for the version 107 of VEP, which is the one currently used in the pipeline)
 * CADD score files for SNVs and InDels
 
 ### 1. Configure the pipeline
@@ -28,9 +28,9 @@ The VEP software is used for the vcf file annotation, without the need to instal
 |**cadd_path**|Directory where the CADD files for annotation are located|
 |**genes** |bed file for the coordinates of genes coding regions. The file for GRCh37 is provided with the pipeline and a new one can be created using [BioMart](https://www.ensembl.org/info/data/biomart/index.html)|
 |**cadd_regions** |bed file for the coordinates of CADD regions. The file for GRCh37 is provided with the pipeline or can be downloaded [here](https://lysine.univ-brest.fr/RAVA-FIRST/)|
-|**vep_cache** |Directory of the VEP cache. Instructions on how to download the cache can be found on the [Ensembl website](https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache)|
+|**vep_cache** |Directory of the VEP cache. Instructions on how to download the cache can be found on the [Ensembl website](https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache) with the necessary files located [here](https://ftp.ensembl.org/pub/release-107/variation/indexed_vep_cache/) for VEP 107|
 |**vep_cache_merged** |"TRUE" if VEP cache is merged, otherwise "FALSE"|
-|**vep_fasta** |VEP FASTA file with its path|
+|**vep_fasta** |VEP FASTA file with its path which can be downloaded [here](https://ftp.ensembl.org/pub/release-107/fasta/) for VEP 107|
 |**outdir** |Output directory|
 |**outfile** |Prefix for output files, will be the name of the PSAP null distributions file|
 |**unit** |Unit of testing to construct PSAP null distributions, can take the values "gene", "cadd_region" or "coding_cadd_region"|
@@ -133,7 +133,7 @@ CADD score by unit of testing (gene, CADD region or coding CADD region) is score
 ### 6. make_report_file
 
 If affected individuals are present in the ped file (value 2 in the 6th column), this step makes a report file that merges the individual PSAP records. If a variant is present in multiple individuals, it will be a single record in the report file.
-If there are control individuals in the vcf (value 1 in the 6th column of the ped file), a validation step is carried out. If the variant of the affected individual(s) is not seen in controls, the validation column has an "ok" value,
+If there are control individuals in the vcf (value 1 in the 6th column of the ped file), a validation step is carried out. If the variant of the affected individual(s) is not seen in controls, the validation column has an "no_controls" value,
 otherwise it has the value "violation". Output located in `{outdir}/annotated}`.
 
 ### 7. compress_output_files
