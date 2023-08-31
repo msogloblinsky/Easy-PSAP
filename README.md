@@ -4,16 +4,12 @@
 
 ## Introduction
 **Easy-PSAP** is a **[Snakemake](https://snakemake.readthedocs.io/en/stable/) workflow** [*Köster et al, 2012*] which allows the evaluation of genetic variants at the scale of a whole exome or genome. 
-It is composed of two pipelines based on the Population Sampling Method (PSAP) method [*Wilfert et al, 2016*]. PSAP uses allele frequencies from large population databases to construct 
-gene-based null distributions of CADD  pathogenicity scores [*Kircher et al, 2014*] and ultimately gives a p-value by gene for each individual, which summarizes how unlikely it is 
-to observe a variant with such CADD score in the general population in this gene.
+It is composed of two pipelines based on the Population Sampling Method (PSAP) method [*Wilfert et al, 2016*]. PSAP uses allele frequencies from large population databases to construct gene-based null distributions of CADD  pathogenicity scores [*Kircher et al, 2014*] and ultimately gives a p-value by gene for each individual, which summarizes how unlikely it is to observe a variant with such CADD score in the general population in this gene.
 
 The first workflow **snakemake_makedistrib_PSAP** allows the custom calculation of PSAP null distributions from allele frequencies data and a pathogenicity score (CADD score or other).
-The second workflow **snakemake_apply_PSAP** is a new implementation of the [initial PSAP pipeline](https://github.com/awilfert/PSAP-pipeline) which applies these null distributions to a vcf file
-of a patient or multiple patients or controls.
+The second workflow **snakemake_apply_PSAP** is a new implementation of the [initial PSAP pipeline](https://github.com/awilfert/PSAP-pipeline) which applies these null distributions to a vcf file of a patient or multiple patients or controls.
 
-Easy-PSAP aims at making the PSAP method accessible and user-friendly for both clinicians and researchers. A set of PSAP null distributions with the latest database information in GRCh37 is readily available
-in the **/snakemake_apply_PSAP** directory, with global allele frequencies from the gnomAD V2 genome database [Karczewski et al 2020] and CADD v1.6 [Rentzsch et al 2021] as the pathogenicity score of variants. 
+Easy-PSAP aims at making the PSAP method accessible and user-friendly for both clinicians and researchers. A set of PSAP null distributions with the latest database information in GRCh37 is readily available in the **/snakemake_apply_PSAP** directory, with global allele frequencies from the gnomAD V2 genome database [Karczewski et al 2020] and CADD v1.6 [Rentzsch et al 2021] as the pathogenicity score of variants. PSAP null distributions in hg38 are now available as well, calibrated using allele frequencies from the gnomAD V3 genome database [Chen et al. 2022] and CADD v1.6 in GRCh38. The option of using the GRCh37 or GRCh38 assembly of the humna genome is offered to users of the pipeline, both for creating PSAP null distributions and applying them to their data.
 Easy-PSAP is currently implemented with genes as units of testing, and the option of using CADD regions is also available which allows the analysis of the whole genome and not just its coding parts.
 
 ## Workflows overview
@@ -63,6 +59,8 @@ Specific instructions to run each of the two pipeline can be found in their READ
 * Kircher, M. et al. A general framework for estimating the relative pathogenicity of human genetic variants. Nat Genet 46, 310–315 (2014)
 * Karczewski, K. J. et al. The mutational constraint spectrum quantified from variation in 141,456 humans. Nature 581, 434–443 (2020)
 * Rentzsch, P., Schubach, M., Shendure, J. & Kircher, M. CADD-Splice—improving genome-wide variant effect prediction using deep learning-derived splice scores. Genome Medicine 13, 31 (2021)
+* Chen S, Francioli LC, Goodrich JK et al. A genome-wide mutational constraint map quantified from variation in 76,156 human genomes. BioRxiv (2022)
+
 
 ## Contact
 

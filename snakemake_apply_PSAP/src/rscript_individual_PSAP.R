@@ -45,7 +45,7 @@ annotations$Chr <- as.character(annotations$Chr) ; annotations$Start <- as.chara
  
 options(scipen=999)
 
-exome.raw<-read.vcf(vcf.file) ; exome.raw <- select.inds(exome.raw, id == indv.id)
+exome.raw<-read.vcf(vcf.file,convert.chr=F) ; exome.raw <- select.inds(exome.raw, id == indv.id)
 exome.raw <- select.snps(exome.raw, N1 !=0 | N2 !=0)
 exome.raw <- exome.raw@snps
 

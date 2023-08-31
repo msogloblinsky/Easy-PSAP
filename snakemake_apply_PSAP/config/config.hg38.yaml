@@ -1,0 +1,31 @@
+##--------------------------------------------------------------------------------------##
+## Variables declaration                          
+##--------------------------------------------------------------------------------------##
+
+## path to snakemake directory ##
+snakemake_directory: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/
+
+## input files and paths to reference files ##
+vcf: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG_hg38.vcf.gz
+ped: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG_hg38.ped
+coverage: /mnt/projects2/Digenism/VEP/hg38/snakemake_makedistrib_PSAP/data/final.newsort.allchr.gnomad.genome.r3.0.1.goodquality.dp10.bed
+lookup_namefile: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/final_lookuptables_PSAP/latest_gnomadgenv3_string_cadd1.6_af_nosing_hg38_caddregionsliftover_lookup_gene
+variants_exclude: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/gnomad.genomes.r2.0.1.sites.allchr.splitmultiall.notpass.exclude.bed.gz
+cadd_path: /PUBLIC_DATA/Annotation/CADD
+genes: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/sorted_splicing_split_merged_genomic_coding_biomart_hg38_107.bed.gz
+cadd_regions: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/sorted.CADDRegions.2021.hg38.liftover.bed.gz
+
+## paths and variables for VEP annotation ##
+vep_cache: /PUBLIC_DATA/Annotation/VEP/VEP_CACHE.v107
+vep_cache_merged: "TRUE"
+vep_fasta: /PUBLIC_DATA/Annotation/VEP/VEP_CACHE.v107/homo_sapiens/107_GRCh38/fasta.fa.gz
+
+## parameters ##
+outdir: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/test_out
+outfile: gnomadgenv3_gene_string_cadd1.6_af_nosing_1kG_phased_filtered_NFE_hg38
+unit: gene #either : gene, cadd_region or coding_cadd_region
+cadd_version: 1.6
+assembly: GRCh38
+
+##optional indel file ##
+indel_file: "/PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG_hg38.tsv"

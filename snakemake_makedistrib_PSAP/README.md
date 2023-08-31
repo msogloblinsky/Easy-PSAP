@@ -12,7 +12,7 @@ Once the conda environment with Snakemake installed is setup and activated, the 
 
 #### config.yaml file
 
-**snakemake_makedistrib_PSAP/config/config.yaml** contains all pipeline parameters which can be tuned by the user:
+**snakemake_makedistrib_PSAP/config/config.yaml** contains all pipeline parameters which are tuned by the user with example parameters for the GRCh37 assembly. **snakemake_makedistrib_PSAP/config/config.hg38.yaml** contains example parameters to run the pipeline for data in hg38. Available parameters are as follows:
 
 |**Parameter** | **Description** |
 |--------------|--------------|
@@ -28,8 +28,13 @@ Once the conda environment with Snakemake installed is setup and activated, the 
 |**outdir** |Output directory|
 |**outfile** |Prefix for output files, will be the name of the PSAP null distributions file|
 |**units** |Unit of testing to construct PSAP null distributions, can take the values "gene", "cadd_region" or "coding_cadd_region"|
+|**assembly** |Both "GRCh37" and "GRCh38" options are currently supported|
 
-For the coverage file, the command line used to get the bed file provided for gnomAD genome V2 (good coverage = 90% of individuals at dp10) was:
+> WARNING: Users need to check the format of their input files. For the GRCh37 assembly, no "chr" prefix is expected before the name of the chromosome in the allele frequency file and in the score file. For the GRCh38 assembly, a "chr" prefix is expected before the name of the chromosome in the allele frequency file but not in the score file. These specifications come from the format of gnomAD files and CADD files. If not the case, the user needs to format their vcf file accordingly, as the pipeline expects this format from input files. 
+
+It can also be noted that the allele frequency input file can be split by chromosome, which needs to be specified accordingly in the config.yaml file (see **snakemake_makedistrib_PSAP/config/config.hg38.yaml** for an example).
+
+For the coverage file, the command line used to get the bed file provided for gnomAD genome V2 (good coverage = 90% of individuals at dp10) was the following. A similar process was used for gnomAD V3 coverage file.
 ```
 zcat gnomad.genomes.r2.0.1.coverage.txt.gz | tail -n+2 | awk '{print $1"\t"($2-1)"\t"$2"\t"$7}' > gnomad.genome.r2.0.1.dp10.bed
 ```
@@ -52,14 +57,14 @@ snakemake --use-conda --conda-create-envs-only --conda-frontend conda -j 1
 Once the pipeline is configured and conda environments are created, the user just needs to run Snakemake pipeline to make PSAP null distributions:
 
 ```
-snakemake --use-conda -j 22 
+snakemake --use-conda --conda-frontend conda -j 22 
 ```
 
 The mandatory arguments are:
-* **--use-conda**: to use the conda environemnts created at the previous step
+* **--use-conda**: to use the conda environments created at the previous step. The **--conda-frontend conda** specifies the use of conda to run the environments, instead of mamba.
 * **-j**: number of threads/jobs provided to snakemake. The pipeline splits each step by chromosome so running it on at least 22 threads is recommended. 
 
-An optional argument **--dry-run** can be to used to make a dry run of the pipeline, check if there are no warnings and see all the files that will be created.
+An optional argument **--dry-run** can be used to make a dry run of the pipeline, check if there are no warnings and see all the files that will be created.
 With the additionnal argument **--configfile=/path_to_configfile/name_config.yaml**, the user can use a configuration file in a different location instead of modifying the default config.yaml file in the snakemake directory.
 
 > TIP: If the execution of a step of the pipeline fails or if you want to see how it progresses, you can check the `{outdir}/log` directory where a log file is created for each rule of the Snakemake by chromosome if applicable.

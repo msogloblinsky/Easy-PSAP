@@ -14,8 +14,8 @@ def warning(msg):
     
 configfile: "config/config.yaml"
 
-#CHR = list(range(1, 23))
-CHR = list(range(21, 23))
+CHR = list(range(22, 23))
+#CHR.append("X")
 WORKINGDIR = config["snakemake_directory"]
 OUTDIR = config["outdir"]
 OUTFILE = config["outfile"]
@@ -29,14 +29,6 @@ try:
     my_abs_path = cadd_file.resolve(strict=True)
 except FileNotFoundError:
     warning(f"ERROR: the pathogenicity score file ({config['cadd_file']}) does not exist. Please see the README file for details. Quitting now.")
-    sys.exit(1)
-
-
-try:
-    allele_frequencies = Path(config["allele_frequencies"])
-    my_abs_path = allele_frequencies.resolve(strict=True)
-except FileNotFoundError:
-    warning(f"ERROR: the allele frequencies file ({config['allele_frequencies']}) does not exist. Please see the README file for details. Quitting now.")
     sys.exit(1)
     
 
@@ -59,7 +51,8 @@ rule split_multiallelic_panel:
     params:
         outdir = config["outdir"],
         af_prefix = config["af_prefix"],
-        chr = "{CHR}"
+        chr = "{CHR}",
+        assembly = config["assembly"]
     conda:  f"{WORKINGDIR}/envs/environment_tools-makedistrib-PSAP.yml"
     log:     
         f"{OUTDIR}/log/rule_split_multiallelic_panel_{AF_PREFIX}_chr{{CHR}}.log"
@@ -67,10 +60,19 @@ rule split_multiallelic_panel:
         f"{OUTDIR}/benchmark/rule_split_multiallelic_panel_{AF_PREFIX}_chr{{CHR}}.benchmark.txt"
     shell:
         """
+		set +u
         mkdir -p {params.outdir}/log
         mkdir -p {params.outdir}/reference_panel
-        bcftools view --regions {params.chr} {input.file_allele_frequencies} | bcftools norm --multiallelics - | bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz
-        tabix {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz 2> {log}
+		if [[ {params.assembly} -eq GRCh38 ]]
+		then
+            bcftools view --regions chr{params.chr} {input.file_allele_frequencies} | bcftools norm --multiallelics - | bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz
+            tabix {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz 2> {log}		
+		elif [[ {params.assembly} -eq GRCh37 ]]
+		then
+            bcftools view --regions {params.chr} {input.file_allele_frequencies} | bcftools norm --multiallelics - | bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz
+            tabix {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz 2> {log}		
+		fi
+		set -u
         """
 
 
@@ -155,7 +157,8 @@ rule make_input_table_forPSAP:
         script = f"{WORKINGDIR}/src/script_make_input_table_forPSAP.sh",
         outdir = config["outdir"],
         score_prefix = config["score_prefix"],
-        chr = "{CHR}"                
+        chr = "{CHR}",
+        assembly = config["assembly"]       
     conda:  f"{WORKINGDIR}/envs/environment_tools-makedistrib-PSAP.yml"
     log:     
         f"{OUTDIR}/log/rule_make_input_table_forPSAP_{SCORE_PREFIX}_chr{{CHR}}.log"
@@ -164,7 +167,7 @@ rule make_input_table_forPSAP:
     shell:
         """
         mkdir -p {params.outdir}/score_tables/ 
-        {params.script} {input.cadd_file} {input.genes} {input.cadd_regions} {input.coverage} {params.outdir} {params.score_prefix} {params.chr} &> {log}
+        {params.script} {input.cadd_file} {input.genes} {input.cadd_regions} {input.coverage} {params.outdir} {params.score_prefix} {params.chr} {params.assembly} &> {log}
         """
         
 rule calculate_null_distributions_PSAP:

@@ -15,7 +15,7 @@ The VEP software is used for the vcf file annotation, without the need to instal
 
 #### config.yaml file
 
-**snakemake_apply_PSAP/config/config.yaml** contains all pipeline parameters which are tuned by the user:
+**snakemake_apply_PSAP/config/config.yaml** contains all pipeline parameters which are tuned by the user with example parameters for the GRCh37 assembly. **snakemake_apply_PSAP/config/config.hg38.yaml** contains example parameters to run the pipeline for data in hg38. Available parameters are as follows:
 
 |**Parameter** | **Description** |
 |--------------|--------------|
@@ -35,16 +35,24 @@ The VEP software is used for the vcf file annotation, without the need to instal
 |**outfile** |Prefix for output files, will be the name of the PSAP null distributions file|
 |**unit** |Unit of testing to construct PSAP null distributions, can take the values "gene", "cadd_region" or "coding_cadd_region"|
 |**cadd_version** |Version of CADD to be used for annotation|
-|**assembly** |The only one currently supported is "GRCh37"|
+|**assembly** |Both "GRCh37" and "GRCh38" options are currently supported|
 |**indel_file** |File with InDels annotated by CADD website or "NA". Column names of InDel file must be "#Chrom Pos Ref Alt RawScore PHRED" (format of CADD 1.6 InDel file)|
 
-WARNING: the input vcf file for the PSAP pipeline must only contain biallelic variants (multiallelic variants need to be split in different lines).
+> TIP: the user running the pipeline needs to have permission to write in the folder where the input vcf file is located. If not, the vcf file needs to already be indexed as the first step of the pipeline involves indexing the input vcf file. Suggested command for indexing a vcf file, using bcftools :
+
+```
+bcftools index {vcf}
+```
+
+WARNING: The input vcf file for the PSAP pipeline must only contain biallelic variants (multiallelic variants need to be split in different lines).
 This process can be done using a tool like [VCFprocessor](https://lysine.univ-brest.fr/vcfprocessor/functions.html#splitmultiallelic) or during a Quality Control of the vcf file using a tool 
 like the [R package RAVAQ](https://gitlab.com/gmarenne/ravaq). We provide a script optional/qc_vcf.R to perform the recommended QC anf formatting for the vcf file. The script can be run using the command:
 
 ```
 Rscript qc_vcf.R {vcf} {ped} {outfile} {outdir}
 ```
+
+Users also need to check the format of the vcf file. For the GRCh37 assembly, no "chr" prefix is expected before the name of the chromosome. For the GRCh38 assembly, a "chr" prefix is expected before the name of the chromosome. If not the case, the user needs to format their vcf file accordingly, as the pipeline expects this format for annotation purposes. 
 
 For the coverage file, the command line used to get the bed file provided for gnomAD genome V2 (good coverage = 90% of individuals at dp10) was:
 
@@ -89,14 +97,14 @@ snakemake --use-conda --conda-create-envs-only --conda-frontend conda
 Once the pipeline is configured and conda environments are created, the user just needs to run the Snakemake pipeline to score the vcf file with PSAP:
 
 ```
-snakemake --use-conda -j 20 
+snakemake --use-conda --conda-frontend conda -j 20 
 ```
 
 The mandatory arguments are:
-* **--use-conda**: to use the conda environemnts created at the previous step
+* **--use-conda**: to use the conda environments created at the previous step. The **--conda-frontend conda** specifies the use of conda to run the environments, instead of mamba.
 * **-j**: number of threads/jobs provided to snakemake. The VEP annotation uses 20 threads if provided (not more), and the number of threads will condition the number of individuals analyzed at the same time. 
 
-An optional argument **--dry-run** can be to used to make a dry run of the pipeline, check if there are no warnings and see all the files that will be created.
+An optional argument **--dry-run** can be used to make a dry run of the pipeline, check if there are no warnings and see all the files that will be created.
 With the additionnal argument **--configfile=/path_to_configfile/name_config.yaml**, the user can use a configuration file in a different location instead of modifying the default config.yaml file in the snakemake directory.
 
 > TIP: If the execution of a step of the pipeline fails or if you want to see how it progresses, you can check the `{outdir}/log` directory where a log file is created for each rule of the Snakemake by individual if applicable.
