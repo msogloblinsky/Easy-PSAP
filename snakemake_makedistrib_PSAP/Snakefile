@@ -14,14 +14,14 @@ def warning(msg):
     
 configfile: "config/config.yaml"
 
-CHR = list(range(22, 23))
-#CHR.append("X")
 WORKINGDIR = config["snakemake_directory"]
 OUTDIR = config["outdir"]
 OUTFILE = config["outfile"]
 SCORE_PREFIX = config["score_prefix"]
 AF_PREFIX = config["af_prefix"] 
-
+CHR = list(range(22, 23))
+if config["hemizygote_model"]:
+    CHR.append("X")
 
 # sanity checks
 try:
@@ -94,7 +94,7 @@ rule make_allele_frequencies_file:
     shell:
         """
         bcftools view -i 'FILTER=="PASS"' --regions-file {params.coverage} --types snps {input.file_allele_frequencies_split} | 
-        bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%AC\n' |
+        bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%AC\t%AF_XX\t%AF_XY\n' |
         bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_goodquality_pass_snps_chr{params.chr}.vcf.gz 2> {log}
         """
 
@@ -183,7 +183,9 @@ rule calculate_null_distributions_PSAP:
         unit = "{units}",
         outdir = config["outdir"],
         outfile = config["outfile"],
-        chr = "{CHR}"
+        chr = "{CHR}",
+        chet_model = config["compound_heterozygote_model"],
+        hem_model = config["hemizygote_model"]
     conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
     log:     
         f"{OUTDIR}/log/rule_calculate_null_distributions_PSAP_{OUTFILE}_{{units}}_chr{{CHR}}.log"
@@ -192,7 +194,7 @@ rule calculate_null_distributions_PSAP:
     shell:
         """
         mkdir -p {params.outdir}/temp_lookup_bychr/
-        Rscript {params.script} {input.score_tables} {input.allele_frequencies_files} {input.notpass_variants} {params.unit} {params.outdir} {params.outfile} {params.chr} &> {log}
+        Rscript {params.script} {input.score_tables} {input.allele_frequencies_files} {input.notpass_variants} {params.unit} {params.outdir} {params.outfile} {params.chr} {params.chet_model} {params.hem_model} &> {log}
         """
         
 rule make_final_null_distributions_PSAP:
@@ -207,7 +209,9 @@ rule make_final_null_distributions_PSAP:
         script = f"{WORKINGDIR}/src/script_make_lookup_PSAP_final.R",
         unit = "{units}",
         outdir = config["outdir"],
-        outfile = config["outfile"]
+        outfile = config["outfile"],
+        chet_model = config["compound_heterozygote_model"],
+        hem_model = config["hemizygote_model"]
     conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
     log:     
         f"{OUTDIR}/log/rule_make_final_null_distributions_PSAP_{OUTFILE}_{{units}}.log"
@@ -216,6 +220,6 @@ rule make_final_null_distributions_PSAP:
     shell:
         """
         mkdir -p {params.outdir}/final_lookuptables_PSAP/
-        Rscript {params.script} {input.list_units} {params.unit} {params.outdir} {params.outfile} &> {log}
+        Rscript {params.script} {input.list_units} {params.unit} {params.outdir} {params.outfile} {params.chet_model} {params.hem_model} &> {log}
         """
 

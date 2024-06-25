@@ -6,6 +6,9 @@ arg = commandArgs(trailingOnly=T)
 outfile = arg[1]
 outdir = arg[3]
 unit_testing = arg[4]
+chet_model <- ifelse(arg[5] == "TRUE" | arg[5] == "True", TRUE, FALSE)
+hem_model <- ifelse(arg[6] == "TRUE" | arg[6] == "True", TRUE, FALSE)
+unit_column <- ifelse(unit_testing == "gene", "Gene_Ensembl", "CADD_region")
 
 ped<-read.table(file=arg[2],header=F,stringsAsFactors=F, sep="\t")
 af<-ped$V2[which(ped$V6==2)]
@@ -17,6 +20,9 @@ stop("No affected individuals in the ped file\n Please see documentation for det
 }
 
 models = c("DOM-het","REC-hom")
+if(chet_model) {models = c(models,"REC-chet")}
+if(hem_model) {models = c(models,"X-linked-hom","X-linked-het","X-linked-hem")}
+if(hem_model & chet_model) {models = c(models,"X-linked-chet")}
 genos = c("het","hom")
 
 print("analysing affected individuals")
@@ -29,7 +35,12 @@ for(i in 1:length(af)){
   
   for(m in 1:length(models)){
     tmp = filter(dat,Dz.Model == models[m])
-      
+    if(models[m] == "REC-chet" & nrow(tmp) > 0){
+      a1 = filter(dat,Dz.Model == "DOM-het" & !!as.name(unit_column) %in% tmp[,unit_column])
+      a1 = merge(a1[-which(names(a1) %in% c("PSAP","Dz.Model"))],tmp[c(unit_column,"PSAP","Dz.Model")])
+      tmp = rbind(tmp,a1)
+      tmp$chet.id=paste(tmp$vid,tmp$PSAP,sep=":")
+    }      
     if(i == 1){
       af.dat[[m]] = tmp
     }else{
@@ -67,8 +78,42 @@ if(length(which(ped$V6==1)) > 0){
   candidates$validation = "ok"
   candidates$validation[which(candidates$Dz.Model == "DOM-het" & candidates$Key %in% uf.dat$Key)] = "violation"
   candidates$validation[which(candidates$Dz.Model != "DOM-het" & candidates$Key %in% uf.dat$Key[which(uf.dat$Dz.Model != "DOM-het")])] = "violation"
+
+if(chet_model){
+	violations = filter(candidates,Dz.Model == "REC-chet" & validation == "violation")
+        candidates$pid = as.character(candidates$pid)
+        gene=unique(violations[,unit_column]) 
+        candidates$pid_beforeupdateRECCHET = candidates$pid  
+	for(g in gene){                                      
+		ok.chets = which(candidates[,unit_column] == g & candidates$Dz.Model == "REC-chet" & candidates$validation == "ok")
+		violated.pid = unique(unlist(strsplit(as.character(violations$pid[which(violations[,unit_column] == g)]),",",fixed=F)))
+		for(p in violated.pid){  
+			if(length(ok.chets) > 0){
+				for(row in ok.chets){ 
+					if(length(grep(",",candidates$pid[row])) > 0){
+						pids = unlist(strsplit(candidates$pid[row],",",fixed=T))
+						pids = pids[which(pids != p)]
+						if(length(pids) > 0){ 
+							candidates$pid[row] = paste(pids,collapse=",") 
+						}else{
+							candidates$pid[row] = NA
+						}
+					}else{
+						pids = candidates$pid[row]
+						pids = pids[which(pids != p)]     
+						if(length(pids) > 0){ 
+							candidates$pid[row] = pids 
+						}else{
+							candidates$pid[row] = NA
+						}
+					}
+				}
+			}
+		}
+	}
 }else{
   candidates$validation = "no_controls"
+}
 }
 
 print("validation complete")

@@ -11,6 +11,8 @@ units <- args[4]
 outdir <- args[5]
 outfile <- args[6]
 chr <- as.numeric(args[7])
+chet_model <- ifelse(arg[8] == "TRUE" | arg[8] == "True", TRUE, FALSE)
+hem_model <- ifelse(arg[9] == "TRUE" | arg[9] == "True", TRUE, FALSE)
 
 timeT = Sys.time()
 options("digits" = 10)
@@ -95,6 +97,87 @@ df1 <- res_mat_hom %>%
 as.data.frame(t(cumsum(df1$prob[1400:1])[1400:1]))
 }
 
+get_cadd_chet_final <- function(table_data){
+y <- table_data %>%                                     
+  dplyr::group_by(cadd_phred) %>%
+  dplyr::summarise(proba_het1 =  1 - prod(1-proba_het), 
+  proba_het2 = ifelse(n() ==1, 0, 1 - prod(1-proba_het) - sum(proba_het*(prod(1-proba_het)/(1-proba_het))) ), 
+  proba_hom1 = 1 - prod(1-proba_hom), n=n() ) %>% 
+  as.data.frame()
+
+y2 <- y[order(-y$cadd_phred),]
+y2$nohet <- 1- y2$proba_het1
+y2$nohom <- 1- y2$proba_hom1
+
+#Calculation of the probability to be the 2nd maximum CADD for the conpound heterozygote model (b)
+probaABOVE = sapply( y2$cadd_phred ,
+                     FUN=function(cadd,x){ above=x[which(x$cadd_phred>cadd),]
+                                           if(nrow(above)>0)
+                                           {
+                                            NOhetABOVE = prod(1-above$proba_het)
+                                            ONLY1hetABOVE = NOhetABOVE * sum( above$proba_het / (1-above$proba_het) )
+                                            return( c(NOhetABOVE=NOhetABOVE , ONLY1hetABOVE=ONLY1hetABOVE) )
+                                           } else {return(c(NOhetABOVE=1,ONLY1hetABOVE=0))}
+                                         } ,
+                     x=y2
+                   )
+				   
+y2$probaNOhetABOVE = probaABOVE[1,]
+y2$probaONLY1hetABOVE = probaABOVE[2,]
+y2$proba_maxcadd_CHET = y2$proba_het1 * y2$probaONLY1hetABOVE + y2$proba_het2 * y2$probaNOhetABOVE
+res2 <- unlist(y2$proba_maxcadd_CHET)
+
+#Distribution of 2nd maximum CADDs for the compound heterozygote model
+scale = seq(0,70,0.05)
+res_mat_chet <- data.frame(t(rbind(res2, t(y2$cadd_phred))))
+colnames(res_mat_chet) <- c("V1","V2")
+res_mat_chet$V1 <- res_mat_chet$V1/(sum(res_mat_chet$V1) )
+
+df1 <- res_mat_chet %>%
+ mutate(bin = cut(V2, breaks = scale, right=FALSE)) %>%
+ group_by(bin) %>%
+ summarize(prob = sum(V1) ) %>%
+ ungroup() %>%
+ complete(bin, fill = list(prob = 0)) 
+
+as.data.frame(t(cumsum(df1$prob[1400:1])[1400:1]))
+}
+
+get_cadd_hem_final <- function(table_data){
+#Group by unique CADD, with the probability of at least 1 hemizygote for duplicated CADDs
+y <- table_data %>%                                     
+  dplyr::group_by(cadd_phred) %>%
+  dplyr::summarise(proba_hem1 =  1 - prod(1-AF_XY), n=n() ) %>% 
+  as.data.frame()
+
+#Ordering CADDs by descending order and calculating the proability for each to have no heterozygote or no homozygote at all
+y2 <- y[order(-y$cadd_phred),]
+y2$nohem <- 1- y2$proba_hem1
+
+#Calculation of the probability to be the maximum CADD for the dominant model (a) and recessive model (d)
+res1 <- lapply(1:nrow(y2),function(i){
+						a = ifelse(i==1, y2$proba_hem1[i],y2$proba_hem1[i] * prod(y2$nohem[1:(i-1)]) ) ;
+						return(c(a))
+						}
+						)
+res_mat <- unlist(res1)
+
+#Distribution of maximum CADDs for the heterozygote model
+scale = seq(0,70,0.05)
+res_mat_hem <- data.frame(t(rbind(res_mat, t(y2$cadd_phred))))
+colnames(res_mat_hem) <- c("V1","V2")
+res_mat_hem$V1 <- res_mat_hem$V1/(sum(res_mat_hem$V1) )
+
+df1 <- res_mat_hem %>%
+ dplyr::mutate(bin = cut(V2, breaks = scale, right=FALSE)) %>%
+ dplyr::group_by(bin) %>%
+ dplyr::summarize(prob = sum(V1) ) %>%
+ dplyr::ungroup() %>%
+ tidyr::complete(bin, fill = list(prob = 0)) 
+
+as.data.frame(t(cumsum(df1$prob[1400:1])[1400:1]))
+}
+
 
 print("Read in data")
 
@@ -119,7 +202,7 @@ data.exclude <- anti_join(data, exclude, by = c("chr","start","ref","alt"))
 
 #Get allele frequencies
 refpanel_af <- fread(allele_frequencies_files, data.table=FALSE, nThread=40)
-setnames(refpanel_af, names(refpanel_af), c("CHROM","POS","REF","ALT","AF","AC"))
+setnames(refpanel_af, names(refpanel_af), c("CHROM","POS","REF","ALT","AF","AC","AF_XX","AF_XY"))
 print(Sys.time()-timeT)
 
 #Calculation of probabilities for each alternative allele
@@ -137,18 +220,32 @@ print(Sys.time()-timeT)
 print("Calculating null distributions")
 timeT = Sys.time()
 cadd_het_final <- setDT(x)[,get_cadd_het_final(.SD),column_testing]
+fwrite(cadd_het_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_het_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
 print(Sys.time()-timeT)
 print("Model HET done")
 
 timeT = Sys.time()
 cadd_hom_final <- setDT(x)[,get_cadd_hom_final(.SD),column_testing]
+fwrite(cadd_hom_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_hom_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
 print(Sys.time()-timeT)
 print("Model HOM done")
 
-timeT = Sys.time()
-print("Writing output files")
-fwrite(cadd_het_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_het_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
-fwrite(cadd_hom_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_hom_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
+if(chet_model){
+	timeT = Sys.time()
+	cadd_chet_final <- setDT(x)[,get_cadd_chet_final(.SD),column_testing]
+	print(Sys.time()-timeT)
+	print("Model CHET done")
+	fwrite(cadd_chet_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_chet_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
+}
+
+if(hem_model){
+	timeT = Sys.time()
+	x$AF_XY <- as.numeric(ifelse(is.na(x$AF_XY), 0, x$AF_XY))
+	cadd_hem_final <- setDT(x)[,get_cadd_hem_final(.SD),column_testing]
+	fwrite(cadd_hem_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_XY_hem_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
+	print(Sys.time()-timeT)
+	print("Model HEM done")
+}
 
 print(paste0("Chromosome ",chr," done")) 
 print(Sys.time()-timeF)

@@ -24,3 +24,5 @@ outdir: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/out
 outfile: latest_gnomadgen_string_cadd1.6_af_nosing_lookup
 units: gene # "gene", "coding_caddregion" or "caddregion"
 assembly: GRCh37
+compound_heterozygote_model: TRUE
+hemizygote_model: TRUE

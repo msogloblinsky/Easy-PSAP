@@ -159,7 +159,9 @@ rule apply_PSAP_calculations:
         lookup_namefile = config["lookup_namefile"],
         unit = config["unit"],
         indel_file = config["indel_file"],
-        vep_cache_merged = config["vep_cache_merged"]
+        vep_cache_merged = config["vep_cache_merged"],
+        chet_model = config["compound_heterozygote_model"],
+        hem_model = config["hemizygote_model"]
     conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
     log:     
         f"{OUTDIR}/log/rule_apply_PSAP_calculations_{OUTFILE}_{{samples}}.log"
@@ -167,7 +169,7 @@ rule apply_PSAP_calculations:
         f"{OUTDIR}/benchmark/rule_apply_PSAP_calculations_{OUTFILE}_{{samples}}.benchmark.txt"
     shell:
         """
-        Rscript {params.script} {params.outfile} {params.outdir} {params.indv} {params.dirPSAP} {params.ped} {input.filtered_vcf} {params.lookup_namefile} {params.unit} {params.vep_cache_merged} {params.indel_file} &> {log}
+        Rscript {params.script} {params.outfile} {params.outdir} {params.indv} {params.dirPSAP} {params.ped} {input.filtered_vcf} {params.lookup_namefile} {params.unit} {params.vep_cache_merged} {params.chet_model} {params.hem_model} {params.indel_file} &> {log}
         """           
         
 rule make_report_file:
@@ -180,7 +182,9 @@ rule make_report_file:
         outdir = config["outdir"],
         outfile = config["outfile"],
         ped = config["ped"],
-        unit = config["unit"]
+        unit = config["unit"],
+        chet_model = config["compound_heterozygote_model"],
+        hem_model = config["hemizygote_model"]
     conda:  f"{WORKINGDIR}envs/environment_r-apply-PSAP.yaml"
     log:     
         f"{OUTDIR}/log/rule_make_report_file_{OUTFILE}.log"
@@ -188,7 +192,7 @@ rule make_report_file:
         f"{OUTDIR}/benchmark/rule_make_report_file_{OUTFILE}.benchmark.txt"
     shell:
         """
-        Rscript {params.script} {params.outfile} {params.ped} {params.outdir} {params.unit} &> {log}
+        Rscript {params.script} {params.outfile} {params.ped} {params.outdir} {params.unit} {params.chet_model} {params.hem_model} &> {log}
         """
 
 rule compress_output_files:

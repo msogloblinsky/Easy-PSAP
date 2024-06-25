@@ -9,7 +9,7 @@ snakemake_directory: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/
 vcf: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG.vcf.gz
 ped: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG.ped
 coverage: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/final.newsort.allchr.gnomad.genome.r2.0.1.goodquality.dp10.bed
-lookup_namefile: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/latest_gnomadgen_string_ensembl_cadd1.6_af_nosing_lookup
+lookup_namefile: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/latest_gnomadgen_string_ensembl_cadd1.6_af_nosing_lookup_withX
 variants_exclude: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/gnomad.genomes.r2.0.1.sites.allchr.splitmultiall.notpass.exclude.bed.gz
 cadd_path: /PUBLIC_DATA/Annotation/CADD
 genes: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/sorted_splicing_split_merged_genomic_coding_biomart.bed.gz
@@ -26,6 +26,8 @@ outfile: gnomadgen_gene_string_cadd1.6_af_nosing_wmutations_exome_10ind_GBR_1kG
 unit: gene #either : gene, cadd_region or coding_cadd_region
 cadd_version: 1.6
 assembly: GRCh37
+compound_heterozygote_model: "TRUE"
+hemizygote_model: "FALSE"
 
 ##optional indel file ##
 indel_file: "/PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG.tsv"

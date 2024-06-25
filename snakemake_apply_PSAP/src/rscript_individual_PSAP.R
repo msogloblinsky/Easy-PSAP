@@ -15,7 +15,10 @@ vcf.file <- arg[6]
 lookup_namefile <- arg[7]
 unit_testing <- arg[8]
 merged <- arg[9]
-indel.file <- ifelse(arg[10] == "NA", NA, arg[10])
+chet_model <- ifelse(arg[10] == "TRUE" | arg[10] == "True", TRUE, FALSE)
+hem_model <- ifelse(arg[11] == "TRUE" | arg[11] == "True", TRUE, FALSE)
+indel.file <- ifelse(arg[12] == "NA" | arg[12] == "Na", NA, arg[12])
+
 
 if(file.exists(paste(outdir,"/annotated/",outfile,"_",indv.id,"_PSAP.txt",sep="")) == FALSE ){
 
@@ -30,6 +33,7 @@ scale = seq(0,70,0.05)
 unit_column <- ifelse(unit_testing == "gene", "Gene_Ensembl", "CADD_region")
 lookup <-fread(file=paste(lookup_namefile,"_het.txt.gz",sep=""),stringsAsFactors=FALSE,header=FALSE,data.table=FALSE,select=1)
 lookup.present <- as.vector(lookup[,1])
+
 
 print("read in data")
 
@@ -83,6 +87,23 @@ exome.raw.fin <- exome.raw.fin[! duplicated(exome.raw.fin[,c("Key",unit_column)]
 print("Extract genotypes")
 exome.raw.fin[,indv.id] <- ifelse(exome.raw.fin$N2 == 1, "hom", "het")
 
+if(hem_model){
+	lookup_hem <- fread(file=paste(lookup_namefile,"_XY_hem_chrX.txt.gz",sep=""),stringsAsFactors=FALSE,header=FALSE,data.table=FALSE,select=1)
+	lookup.hem.present <- as.vector(lookup_hem[,1])
+	
+if(ped$V5[which(ped$V2 == indv.id)] == 1){
+	gender = "male"
+	exome.raw[which(exome.raw[,indv.id] %in% c("hom") & (exome.raw[,"Chr"] == "X" | exome.raw[,"Chr"] == "chrX") ),indv.id] = "hem" 
+	exome.raw[which(exome.raw[,indv.id] %in% c("het") & (exome.raw[,"Chr"] == "X" | exome.raw[,"Chr"] == "chrX") ),indv.id] = "ref" 
+	exome.raw <- exome.raw[which(exome.raw.fin[,unit_column] %in% lookup.hem.present),]
+} else if (ped$V5[which(ped$V2 == indv.id)] == 2){
+	gender = "female" 
+	exome.raw[which(exome.raw[,indv.id]=="het" & (exome.raw[,"Chr"] == "X" | exome.raw[,"Chr"] == "chrX")),indv.id] = "het_female"
+	exome.raw[which(exome.raw[,indv.id]=="hom" & (exome.raw[,"Chr"] == "X" | exome.raw[,"Chr"] == "chrX")),indv.id] = "hom_female"	
+    exome.raw <- exome.raw[which(exome.raw.fin[,unit_column] %in% c("P2RY8","CXYorf3","ASMT","DHRSXY","ZBED1","CD99","XG")),] # remove genes in PAR regions  
+	  } 
+} else {gender = "none"}
+
 print("clean data process")
 exome.raw.fin[,score] <- as.numeric(exome.raw.fin[,score])
 lookup.remove <- which(! exome.raw.fin[,unit_column] %in% lookup.present)
@@ -90,6 +111,8 @@ lookup.remove <- which(! exome.raw.fin[,unit_column] %in% lookup.present)
 if(length(lookup.remove) != 0){
 	exome <- exome.raw.fin[-unique(lookup.remove),]
 }else{exome <- exome.raw.fin}
+
+if(hem_model == FALSE){ exome <- filter(exome, Chr != "X",  Chr != "chrX")}
 
 if (is.na(indel.file)==FALSE){
 	indel.scores = read.table(indel.file, sep='\t', quote='', header=T, comment.char='',skip=1)

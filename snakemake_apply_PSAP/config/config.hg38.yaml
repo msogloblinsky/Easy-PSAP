@@ -26,6 +26,8 @@ outfile: gnomadgenv3_gene_string_cadd1.6_af_nosing_1kG_phased_filtered_NFE_hg38
 unit: gene #either : gene, cadd_region or coding_cadd_region
 cadd_version: 1.6
 assembly: GRCh38
+compound_heterozygote_model: "TRUE"
+hemizygote_model: "TRUE"
 
 ##optional indel file ##
 indel_file: "/PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG_hg38.tsv"
