@@ -8,29 +8,36 @@ The input data is highly customizable and the use of Snakemake makes it possible
 
 Once the conda environment with Snakemake installed is setup and activated, the user can modify the configuration file according to the desired input files and parameters, and run the pipeline.
 
+> WARNING: `/data/final.newsort.allchr.gnomad.genome.r3.0.1.goodquality.dp10.bed.gz` file us to be unzipped using `gunzip` command 
+
 ### 1. Configure the pipeline
 
 #### config.yaml file
 
-**snakemake_makedistrib_PSAP/config/config.yaml** contains all pipeline parameters which are tuned by the user with example parameters for the GRCh37 assembly. **snakemake_makedistrib_PSAP/config/config.hg38.yaml** contains example parameters to run the pipeline for data in hg38. Available parameters are as follows:
+**snakemake_makedistrib_PSAP/config/config.hg19.yaml** contains all pipeline parameters which are tuned by the user with example parameters for the GRCh37 assembly. **snakemake_makedistrib_PSAP/config/config.hg38.yaml** contains example parameters to run the pipeline for data in hg38. Available parameters are as follows:
 
 |**Parameter** | **Description** |
 |--------------|--------------|
-|**snakemake_directory** |Path to `/snakemake_makedistrib_PSAP` directory on the user's machine|
-|**genes** |bed file for the coordinates of genes' coding regions. The file for GRCh37 is provided with the pipeline and a new one for GRCh38 can be created using [BioMart](https://www.ensembl.org/info/data/biomart/index.html)|
-|**cadd_regions** |bed file for the coordinates of CADD regions. The file for GRCh37 is provided with the pipeline or can be downloaded [here](https://lysine.univ-brest.fr/RAVA-FIRST/)|
-|**coding_cadd_regions** |bed file for the coordinates of coding CADD regions. Created from the intersection of genes and CADD regions bed files|
-|**cadd_file**|Score file used to calibrated PSAP null distributions. Format of a [CADD file](https://cadd.gs.washington.edu/download) currently supported. File needs to be indexed|
-|**score_prefix** |Prefix describing the score file used|
-|**allele_frequencies** |Allele frequencies file used to calibrated PSAP null distributions, in the format vcf.gz|
-|**coverage** |bed file of regions well-covered regions in allele frequency database|
-|**af_prefix** |Prefix describing the allele frequencies file used|
-|**outdir** |Output directory|
-|**outfile** |Prefix for output files, will be the name of the PSAP null distributions file|
-|**units** |Unit of testing to construct PSAP null distributions, can take the values "gene", "cadd_region" or "coding_cadd_region"|
-|**assembly** |Both "GRCh37" and "GRCh38" options are currently supported|
+|**snakemake_directory**|Path to `/snakemake_makedistrib_PSAP` directory on the user's machine|
+|**genes**|bed file for the coordinates of genes' coding regions. The file for GRCh37 is provided with the pipeline and a new one for GRCh38 can be created using [BioMart](https://www.ensembl.org/info/data/biomart/index.html)|
+|**cadd_regions**|bed file for the coordinates of CADD regions. The file for GRCh37 is provided with the pipeline or can be downloaded [here](https://lysine.univ-brest.fr/RAVA-FIRST/)|
+|**coding_cadd_regions**|bed file for the coordinates of coding CADD regions. Created from the intersection of genes and CADD regions bed files|
+|**score_file**|Score file used to calibrated PSAP null distributions. Format of a [CADD file](https://cadd.gs.washington.edu/download) currently supported. File needs to be indexed|
+|**score_prefix**|Prefix describing the score file used|
+|**score_max**|Maximal possible value of the pathogenicity score (70 for CADD) used to calibrate null distributions|
+|**allele_frequencies**|Allele frequencies file used to calibrated PSAP null distributions, in the format vcf.gz|
+|**coverage**|bed file of regions well-covered regions in allele frequency database|
+|**af_prefix**|Prefix describing the allele frequencies file used|
+|**outdir**|Output directory|
+|**outfile**|Prefix for output files, will be the name of the PSAP null distributions file|
+|**units**|Unit of testing to construct PSAP null distributions, can take the values "gene", "cadd_region" or "coding_cadd_region"|
+|**assembly**|Both "GRCh37" and "GRCh38" options are currently supported|
+|**compound_heterozygote_model**|TRUE or FALSE, if TRUE will calculate PSAP null distributions for the compound heterozygote (CHET) model|
+|**hemizygote_model**|TRUE or FALSE, if TRUE will calculate PSAP null distributions for the hemizygote model (HEM PSAP null distributions precalculated for genes only)
 
 > WARNING: Users need to check the format of their input files. For the GRCh37 assembly, no "chr" prefix is expected before the name of the chromosome in the allele frequency file and in the score file. For the GRCh38 assembly, a "chr" prefix is expected before the name of the chromosome in the allele frequency file but not in the score file. These specifications come from the format of gnomAD files and CADD files. If not the case, the user needs to format their vcf file accordingly, as the pipeline expects this format from input files. 
+
+> For the hemizygote model: units of testing need to be defined on chrX. This option will also calculate AD/AR/CHET models for females. The names of female/male allele frequencies columns in the allele frequencies file can be changed on line 97 of the Snakefile (currently "AF_Female" and "AF_Male")
 
 It can also be noted that the allele frequency input file can be split by chromosome, which needs to be specified accordingly in the config.yaml file (see **snakemake_makedistrib_PSAP/config/config.hg38.yaml** for an example).
 
@@ -49,7 +56,7 @@ The Snakemake relies on conda environements which contain all the necessary depe
 This step is easily done using the following command line:
 
 ```
-snakemake --use-conda --conda-create-envs-only --conda-frontend conda -j 1
+snakemake --use-conda --conda-create-envs-only --conda-frontend conda -j 1  --configfile config/config.hg19.yaml
 ```
 
 ### 3. Run the pipeline.
@@ -57,7 +64,7 @@ snakemake --use-conda --conda-create-envs-only --conda-frontend conda -j 1
 Once the pipeline is configured and conda environments are created, the user just needs to run Snakemake pipeline to make PSAP null distributions:
 
 ```
-snakemake --use-conda --conda-frontend conda -j 22 
+snakemake --use-conda --conda-frontend conda -j 22  --configfile config/config.hg19.yaml
 ```
 
 The mandatory arguments are:

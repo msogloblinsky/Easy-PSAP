@@ -1,0 +1,34 @@
+##--------------------------------------------------------------------------------------##
+## Variables declaration                          
+##--------------------------------------------------------------------------------------##
+
+## path to snakemake directory ##
+snakemake_directory: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/
+
+## input files and paths to reference files ##
+vcf: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG.vcf.gz
+ped: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG.ped
+coverage: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/final.newsort.allchrwX.gnomad.genome.r2.0.1.dp10.bed
+lookup_namefile: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/gnomadgenv2.0.1_af_cadd1.6_hg19_lookup_wchrX_gene
+variants_exclude: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/gnomad.genomes.r2.0.1.sites.allchr.splitmultiall.notpass.exclude.bed.gz
+cadd_path: /PUBLIC_DATA/Annotation/CADD
+score_max: 70 # For CADD, only change if other score is used
+genes: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/sorted_splicing_split_merged_genomic_coding_biomart_grch37_107_wchrX.bed.gz
+cadd_regions: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/data/forvep_CADDRegions.2021.hg19.bed.gz
+
+## paths and variables for VEP annotation ##
+vep_cache: /PUBLIC_DATA/Annotation/VEP/VEP_CACHE.v107
+vep_cache_merged: "TRUE"
+vep_fasta: /PUBLIC_DATA/Annotation/VEP/VEP_CACHE.v107/homo_sapiens/107_GRCh37/fasta.fa.gz
+
+## parameters ##
+outdir: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/test_out
+outfile: gnomadgen_gene_string_cadd1.6_af_nosing_wmutations_exome_10ind_GBR_1kG
+unit: gene #either : gene, cadd_region or coding_cadd_region
+cadd_version: 1.6
+assembly: GRCh37
+compound_heterozygote_model: "TRUE"
+hemizygote_model: "FALSE"
+
+##optional indel file ##
+indel_file: "/PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_apply_PSAP/example/wmutations_exome_split_sample_10ind_GBR_1kG.tsv"

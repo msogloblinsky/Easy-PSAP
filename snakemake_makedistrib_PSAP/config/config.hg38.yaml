@@ -6,22 +6,23 @@
 snakemake_directory: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP
 
 ## reference settings and paths to reference files ##
-genes: /mnt/projects2/Digenism/VEP/hg38/snakemake_makedistrib_PSAP/data/sorted_splicing_split_merged_genomic_coding_biomart_hg38_107.bed
-cadd_regions: /mnt/projects2/Digenism/VEP/hg38/snakemake_makedistrib_PSAP/data/sorted.CADDRegions.2021.hg38.liftover.bed
-coding_cadd_regions: /mnt/projects2/Digenism/VEP/hg38/snakemake_makedistrib_PSAP/data/sorted_splitcoding_caddregions.splicing_split_merged_genomic_coding_biomart_hg38_107_liftover.bed
+genes: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/sorted_splicing_split_merged_genomic_coding_biomart_hg38_107_wchrX.bed
+cadd_regions: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/sorted.CADDRegions.2021.hg38.liftover.bed
+coding_cadd_regions: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/sorted_splitcoding_caddregions.splicing_split_merged_genomic_coding_biomart_hg38_107_liftover.bed
 
 ## pathogenicity score files and parameter ##
-cadd_file: /PUBLIC_DATA/Annotation/CADD/CADD_v1.6_GRCh38/whole_genome_SNVs.tsv.gz
+score_file: /PUBLIC_DATA/Annotation/CADD/CADD_v1.6_GRCh38/whole_genome_SNVs.tsv.gz
 score_prefix: cadd1.6_whole_genome_SNVs_hg38
+score_max: 70 # For CADD, only change if other score is used
 
 ## allele frequency file and parameter ##
 allele_frequencies: /PUBLIC_DATA/ReferencePanels/GnomAD/hg38/v3.1.2/genomes/gnomad.genomes.v3.1.2.sites.chr{CHR}.vcf.bgz
-coverage: /mnt/projects2/Digenism/VEP/hg38/snakemake_makedistrib_PSAP/data/final.newsort.allchr.gnomad.genome.r3.0.1.goodquality.dp10.bed
+coverage: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/final.newsort.allchr.gnomad.genome.r3.0.1.goodquality.dp10.bed
 af_prefix: gnomad_genomes_v3
 
 ## parameters ##
 outdir: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/out
-outfile: latest_gnomadgenv3_string_cadd1.6_af_nosing_hg38_lookup
+outfile: gnomadgenv3_af_cadd1.6_hg38_lookup_wchrX
 units: gene # "gene", "coding_cadd_region" or "cadd_region"
 assembly: GRCh38
 compound_heterozygote_model: TRUE

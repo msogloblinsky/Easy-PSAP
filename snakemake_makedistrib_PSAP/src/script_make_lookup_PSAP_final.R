@@ -1,13 +1,13 @@
-args <- commandArgs(trailingOnly=TRUE)
+arg <- commandArgs(trailingOnly=TRUE)
 
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(data.table))
 
-list_units <- args[1]
-units <- args[2]
-outdir <- args[3]
-outfile <- args[4]
+list_units <- arg[1]
+units <- arg[2]
+outdir <- arg[3]
+outfile <- arg[4]
 chet_model <- ifelse(arg[5] == "TRUE" | arg[5] == "True", TRUE, FALSE)
 hem_model <- ifelse(arg[6] == "TRUE" | arg[6] == "True", TRUE, FALSE)
 

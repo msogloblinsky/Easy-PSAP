@@ -39,7 +39,7 @@ for(i in 1:length(af)){
       a1 = filter(dat,Dz.Model == "DOM-het" & !!as.name(unit_column) %in% tmp[,unit_column])
       a1 = merge(a1[-which(names(a1) %in% c("PSAP","Dz.Model"))],tmp[c(unit_column,"PSAP","Dz.Model")])
       tmp = rbind(tmp,a1)
-      tmp$chet.id=paste(tmp$vid,tmp$PSAP,sep=":")
+      tmp$chet.id=paste(tmp$Key,tmp$PSAP,sep=":")
     }      
     if(i == 1){
       af.dat[[m]] = tmp
@@ -53,7 +53,8 @@ candidates = data.frame()
 for(m in 1:length(models)){
   print(models[m])
   if(models[m] == "REC-chet"){
-	tmp <- af.dat[[m]] %>% group_by(chet.id) %>% mutate(pid=paste(pid,collapse=","), n=n() ) %>% distinct(across(-c("pid","chet.id"))) %>% arrange(Key)
+	#tmp <- af.dat[[m]] %>% group_by(chet.id) %>% mutate(pid=paste(pid,collapse=","), n=n() ) %>% distinct(across(-c("pid","chet.id"))) %>% arrange(Key) %>% ungroup %>% select(-chet.id)
+	tmp <- do.call(rbind,by(af.dat[[m]],af.dat[[m]]$chet.id, function(dat) return(data.frame(unique(dat[which(!names(dat) %in% c("pid","chet.id"))]),pid=paste(unique(dat$pid),collapse=","),n=length(unique(dat$pid)) ))))
   }else{
     tmp = do.call(rbind,by(af.dat[[m]],af.dat[[m]]$Key, function(dat) return(data.frame(unique(dat[which(names(dat) != "pid")]),pid=paste(unique(dat$pid),collapse=","),n=length(unique(dat$pid)) ))))
   }

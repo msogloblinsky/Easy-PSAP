@@ -12,23 +12,23 @@ class ansitxt:
 def warning(msg):
     print(f"\n{ansitxt.BOLD}{ansitxt.RED}{msg}{ansitxt.ENDC}\n",file=sys.stderr)
     
-configfile: "config/config.yaml"
+configfile: "config/config.hg19.yaml"
 
 WORKINGDIR = config["snakemake_directory"]
 OUTDIR = config["outdir"]
 OUTFILE = config["outfile"]
 SCORE_PREFIX = config["score_prefix"]
 AF_PREFIX = config["af_prefix"] 
-CHR = list(range(22, 23))
+CHR = list(range(1, 23))
 if config["hemizygote_model"]:
     CHR.append("X")
 
 # sanity checks
 try:
-    cadd_file = Path(config["cadd_file"])
-    my_abs_path = cadd_file.resolve(strict=True)
+    score_file = Path(config["score_file"])
+    my_abs_path = score_file.resolve(strict=True)
 except FileNotFoundError:
-    warning(f"ERROR: the pathogenicity score file ({config['cadd_file']}) does not exist. Please see the README file for details. Quitting now.")
+    warning(f"ERROR: the pathogenicity score file ({config['score_file']}) does not exist. Please see the README file for details. Quitting now.")
     sys.exit(1)
     
 
@@ -63,18 +63,18 @@ rule split_multiallelic_panel:
 		set +u
         mkdir -p {params.outdir}/log
         mkdir -p {params.outdir}/reference_panel
-		if [[ {params.assembly} -eq GRCh38 ]]
-		then
-            bcftools view --regions chr{params.chr} {input.file_allele_frequencies} | bcftools norm --multiallelics - | bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz
+        assembly=({params.assembly})
+        if [ "${{assembly}}" == "GRCh38" ]; then
+           bcftools view --regions chr{params.chr} {input.file_allele_frequencies} | bcftools norm --multiallelics - | bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz
             tabix {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz 2> {log}		
-		elif [[ {params.assembly} -eq GRCh37 ]]
-		then
+        elif [ "${{assembly}}" == "GRCh37" ]; then
             bcftools view --regions {params.chr} {input.file_allele_frequencies} | bcftools norm --multiallelics - | bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz
             tabix {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_chr{params.chr}.vcf.gz 2> {log}		
-		fi
+        else
+            echo "Unsupported assembly name"
+        fi		
 		set -u
         """
-
 
 rule make_allele_frequencies_file:
     input:
@@ -94,7 +94,7 @@ rule make_allele_frequencies_file:
     shell:
         """
         bcftools view -i 'FILTER=="PASS"' --regions-file {params.coverage} --types snps {input.file_allele_frequencies_split} | 
-        bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%AC\t%AF_XX\t%AF_XY\n' |
+        bcftools query -f'%CHROM\t%POS\t%REF\t%ALT\t%AF\t%AC\t%AF_Female\t%AF_Male\n' |
         bgzip > {params.outdir}/reference_panel/af_forPSAP_splitmultial_{params.af_prefix}_goodquality_pass_snps_chr{params.chr}.vcf.gz 2> {log}
         """
 
@@ -147,7 +147,7 @@ rule list_units_wellcovered_panel:
         
 rule make_input_table_forPSAP:
     input:
-        cadd_file = config["cadd_file"],
+        score_file = config["score_file"],
         genes = config["genes"],
         cadd_regions = config["cadd_regions"],
         coverage = config["coverage"]
@@ -167,7 +167,7 @@ rule make_input_table_forPSAP:
     shell:
         """
         mkdir -p {params.outdir}/score_tables/ 
-        {params.script} {input.cadd_file} {input.genes} {input.cadd_regions} {input.coverage} {params.outdir} {params.score_prefix} {params.chr} {params.assembly} &> {log}
+        {params.script} {input.score_file} {input.genes} {input.cadd_regions} {input.coverage} {params.outdir} {params.score_prefix} {params.chr} {params.assembly} &> {log}
         """
         
 rule calculate_null_distributions_PSAP:
@@ -185,7 +185,8 @@ rule calculate_null_distributions_PSAP:
         outfile = config["outfile"],
         chr = "{CHR}",
         chet_model = config["compound_heterozygote_model"],
-        hem_model = config["hemizygote_model"]
+        hem_model = config["hemizygote_model"],
+        score_max = config["score_max"]
     conda:  f"{WORKINGDIR}/envs/environment_r-makedistrib-PSAP.yml"
     log:     
         f"{OUTDIR}/log/rule_calculate_null_distributions_PSAP_{OUTFILE}_{{units}}_chr{{CHR}}.log"
@@ -194,7 +195,7 @@ rule calculate_null_distributions_PSAP:
     shell:
         """
         mkdir -p {params.outdir}/temp_lookup_bychr/
-        Rscript {params.script} {input.score_tables} {input.allele_frequencies_files} {input.notpass_variants} {params.unit} {params.outdir} {params.outfile} {params.chr} {params.chet_model} {params.hem_model} &> {log}
+        Rscript {params.script} {input.score_tables} {input.allele_frequencies_files} {input.notpass_variants} {params.unit} {params.outdir} {params.outfile} {params.chr} {params.chet_model} {params.hem_model} {params.score_max} &> {log}
         """
         
 rule make_final_null_distributions_PSAP:

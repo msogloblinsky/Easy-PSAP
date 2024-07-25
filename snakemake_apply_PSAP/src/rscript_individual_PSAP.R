@@ -17,10 +17,9 @@ unit_testing <- arg[8]
 merged <- arg[9]
 chet_model <- ifelse(arg[10] == "TRUE" | arg[10] == "True", TRUE, FALSE)
 hem_model <- ifelse(arg[11] == "TRUE" | arg[11] == "True", TRUE, FALSE)
-indel.file <- ifelse(arg[12] == "NA" | arg[12] == "Na", NA, arg[12])
+score_max <- as.numeric(arg[12])
+indel.file <- ifelse(arg[13] == "NA" | arg[13] == "Na", NA, arg[13])
 
-
-if(file.exists(paste(outdir,"/annotated/",outfile,"_",indv.id,"_PSAP.txt",sep="")) == FALSE ){
 
 gene_col <- "SYMBOL"
 func_col <- "Consequence"
@@ -28,7 +27,7 @@ loc_col <- "VARIANT_CLASS"
 aa_col <- "Amino_acids"
 score <- "CADD_PHRED"
 caddreg<- "CADD_region"
-scale = seq(0,70,0.05)
+scale = seq(0,score_max,length.out=1401)
 
 unit_column <- ifelse(unit_testing == "gene", "Gene_Ensembl", "CADD_region")
 lookup <-fread(file=paste(lookup_namefile,"_het.txt.gz",sep=""),stringsAsFactors=FALSE,header=FALSE,data.table=FALSE,select=1)
@@ -149,7 +148,7 @@ if (is.na(indel.file)==FALSE){
 	exome <- rbind(exome[which(! exome[,loc_col] %in% c("deletion","insertion")),], indels)
 }
 
-MAX <- 70
+MAX <- score_max
 MIN <- 0
 exome[,score][which(exome[,score] > MAX)] <- MAX
 exome[,score][which(exome[,score] < MIN)] <- MIN
@@ -179,4 +178,3 @@ out <- out[order(out$PSAP),]
 
 print("writing file")
 write.table(out,paste(outdir,"/annotated/",outfile,"_",indv.id,"_PSAP.txt",sep=""),col.names=TRUE,row.names=FALSE,sep="\t",quote=FALSE)
-}

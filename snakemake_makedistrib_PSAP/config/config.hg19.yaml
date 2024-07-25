@@ -1,0 +1,29 @@
+##--------------------------------------------------------------------------------------##
+## Variables declaration                          
+##--------------------------------------------------------------------------------------##
+
+## path to snakemake directory ##
+snakemake_directory: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP
+
+## reference settings and paths to reference files ##
+genes: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/sorted_splicing_split_merged_genomic_coding_biomart_grch37_107_wchrX.bed
+cadd_regions: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/sorted.CADDRegions.2021.hg19.bed
+coding_cadd_regions: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/sorted_splitcoding_caddregions.splicing_split_merged_genomic_coding_biomart.bed
+
+## pathogenicity score files and parameter ##
+score_file: /PUBLIC_DATA/Annotation/CADD/CADD_v1.6/whole_genome_SNVs.tsv.gz
+score_prefix: cadd1.6_whole_genome_SNVs
+score_max: 70 # For CADD, only change if other score is used
+
+## allele frequency file and parameter ##
+allele_frequencies: /PUBLIC_DATA/ReferencePanels/GnomAD/genome/gnomad.genomes.r2.0.1.sites.allchr.vcf.gz
+coverage: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/data/final.newsort.allchrwX.gnomad.genome.r2.0.1.dp10.bed
+af_prefix: gnomad_genomes_v2.0.1
+
+## parameters ##
+outdir: /PROGS/scripts/msogloblinsky/bin/PSAP/snakemake_makedistrib_PSAP/out
+outfile: gnomadgenv2.0.1_af_cadd1.6_hg19_lookup_wchrX
+units: gene # "gene", "coding_cadd_region" or "cadd_region"
+assembly: GRCh37
+compound_heterozygote_model: TRUE
+hemizygote_model: TRUE

@@ -1,18 +1,19 @@
-args <- commandArgs(trailingOnly=TRUE)
+arg <- commandArgs(trailingOnly=TRUE)
 
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(data.table))
 
-score_tables <- args[1]
-allele_frequencies_files <- args[2]
-notpass_variants <- args[3]
-units <- args[4]
-outdir <- args[5]
-outfile <- args[6]
-chr <- as.numeric(args[7])
+score_tables <- arg[1]
+allele_frequencies_files <- arg[2]
+notpass_variants <- arg[3]
+units <- arg[4]
+outdir <- arg[5]
+outfile <- arg[6]
+chr <- arg[7]
 chet_model <- ifelse(arg[8] == "TRUE" | arg[8] == "True", TRUE, FALSE)
 hem_model <- ifelse(arg[9] == "TRUE" | arg[9] == "True", TRUE, FALSE)
+score_max <- as.numeric(arg[10])
 
 timeT = Sys.time()
 options("digits" = 10)
@@ -44,7 +45,7 @@ res1 <- lapply(1:nrow(y2),function(i){
 res_mat <- matrix(unlist(res1),nrow=2)
 
 #Distribution of maximum CADDs for the heterozygote model
-scale = seq(0,70,0.05)
+scale = seq(0,score_max,length.out=1401)
 res_mat_het <- data.frame(t(rbind(res_mat[1,], t(y2$cadd_phred))))
 colnames(res_mat_het) <- c("V1","V2")
 res_mat_het$V1 <- res_mat_het$V1/(sum(res_mat_het$V1) )
@@ -81,7 +82,7 @@ res1 <- lapply(1:nrow(y2),function(i){
 res_mat <- matrix(unlist(res1),nrow=2)
 
 #Distribution of maximum CADDs for the homozygote model
-scale = seq(0,70,0.05)
+scale = seq(0,score_max,length.out=1401)
 res_mat_hom <- data.frame(t(rbind(res_mat[2,], t(y2$cadd_phred))))
 colnames(res_mat_hom) <- c("V1","V2")
 res_mat_hom$V1 <- res_mat_hom$V1/(sum(res_mat_hom$V1) )
@@ -104,6 +105,8 @@ y <- table_data %>%
   proba_het2 = ifelse(n() ==1, 0, 1 - prod(1-proba_het) - sum(proba_het*(prod(1-proba_het)/(1-proba_het))) ), 
   proba_hom1 = 1 - prod(1-proba_hom), n=n() ) %>% 
   as.data.frame()
+
+y$proba_het2 <- ifelse(y$proba_het2 < 0,0,y$proba_het2)
 
 y2 <- y[order(-y$cadd_phred),]
 y2$nohet <- 1- y2$proba_het1
@@ -128,7 +131,7 @@ y2$proba_maxcadd_CHET = y2$proba_het1 * y2$probaONLY1hetABOVE + y2$proba_het2 * 
 res2 <- unlist(y2$proba_maxcadd_CHET)
 
 #Distribution of 2nd maximum CADDs for the compound heterozygote model
-scale = seq(0,70,0.05)
+scale = seq(0,score_max,length.out=1401)
 res_mat_chet <- data.frame(t(rbind(res2, t(y2$cadd_phred))))
 colnames(res_mat_chet) <- c("V1","V2")
 res_mat_chet$V1 <- res_mat_chet$V1/(sum(res_mat_chet$V1) )
@@ -163,7 +166,7 @@ res1 <- lapply(1:nrow(y2),function(i){
 res_mat <- unlist(res1)
 
 #Distribution of maximum CADDs for the heterozygote model
-scale = seq(0,70,0.05)
+scale = seq(0,score_max,length.out=1401)
 res_mat_hem <- data.frame(t(rbind(res_mat, t(y2$cadd_phred))))
 colnames(res_mat_hem) <- c("V1","V2")
 res_mat_hem$V1 <- res_mat_hem$V1/(sum(res_mat_hem$V1) )
@@ -238,11 +241,11 @@ if(chet_model){
 	fwrite(cadd_chet_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_chet_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
 }
 
-if(hem_model){
+if(hem_model & chr == "X"){
 	timeT = Sys.time()
 	x$AF_XY <- as.numeric(ifelse(is.na(x$AF_XY), 0, x$AF_XY))
 	cadd_hem_final <- setDT(x)[,get_cadd_hem_final(.SD),column_testing]
-	fwrite(cadd_hem_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_XY_hem_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
+	fwrite(cadd_hem_final, file = paste0(outdir,"/temp_lookup_bychr/",outfile,"_",units,"_hem_chr",chr,".txt"), quote=F, sep="\t", row.names=F, col.names=F)
 	print(Sys.time()-timeT)
 	print("Model HEM done")
 }

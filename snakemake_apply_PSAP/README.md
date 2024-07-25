@@ -1,4 +1,4 @@
-# Snakemake workflow to make PSAP null distributions 
+# Snakemake workflow to apply PSAP null distributions 
 
 ## Introduction
 This second workflow **snakemake_apply_PSAP** applies these null distributions to a vcf file of a patient or multiple patients or controls. 
@@ -15,28 +15,33 @@ The VEP software is used for the vcf file annotation, without the need to instal
 
 #### config.yaml file
 
-**snakemake_apply_PSAP/config/config.yaml** contains all pipeline parameters which are tuned by the user with example parameters for the GRCh37 assembly. **snakemake_apply_PSAP/config/config.hg38.yaml** contains example parameters to run the pipeline for data in hg38. Available parameters are as follows:
+**snakemake_apply_PSAP/config/config.hg19.yaml** contains all pipeline parameters which are tuned by the user with example parameters for the GRCh37 assembly. **snakemake_apply_PSAP/config/config.hg38.yaml** contains example parameters to run the pipeline for data in GRCh38. Available parameters are as follows:
 
 |**Parameter** | **Description** |
 |--------------|--------------|
-|**snakemake_directory** |Path to `/snakemake_apply_PSAP` directory on the user's machine|
-|**vcf** |vcf file with individual data to score with PSAP, needs to be in format GRCh37 (no "chr" prefix for chromosomes) and bgzipped|
-|**ped** |Corresponding PED file for the vcf file, tab-delimited, important columns are 2nd column = individual IDs, 6th column = status (1=unaffected, 2=affected)|
-|**coverage** |bed file of regions well-covered regions in allele frequency database|
-|**lookup_namefile** |Path and prefix of the lookup table for PSAP null distributions (lead to two files ending by "_het.txt.gz" and "_hom.txt.gz")|
-|**variants_exclude** |List of variants to exclude from the vcf file, that were excluded from the calculation of null distributions. The file for gnomAD V2 is provided with the pipeline|
+|**snakemake_directory**|Path to `/snakemake_apply_PSAP` directory on the user's machine|
+|**vcf**|vcf file with individual data to score with PSAP, needs to be in format GRCh37 (no "chr" prefix for chromosomes) and bgzipped|
+|**ped**|Corresponding PED file for the vcf file, tab-delimited, important columns are 2nd column = individual IDs, 5th column = sex (1=male, 2=female, other=unknown) and 6th column = status (1=unaffected, 2=affected)|
+|**coverage**|bed file of regions well-covered regions in allele frequency database|
+|**lookup_namefile**|Path and prefix of the lookup table for PSAP null distributions (lead to two files ending by "_het.txt.gz" and "_hom.txt.gz")|
+|**variants_exclude**|List of variants to exclude from the vcf file, that were excluded from the calculation of null distributions. The file for gnomAD V2 is provided with the pipeline|
 |**cadd_path**|Directory where the CADD files for annotation are located|
-|**genes** |bed file for the coordinates of genes coding regions. The file for GRCh37 is provided with the pipeline and a new one can be created using [BioMart](https://www.ensembl.org/info/data/biomart/index.html)|
-|**cadd_regions** |bed file for the coordinates of CADD regions. The file for GRCh37 is provided with the pipeline or can be downloaded [here](https://lysine.univ-brest.fr/RAVA-FIRST/)|
-|**vep_cache** |Directory of the VEP cache. Instructions on how to download the cache can be found on the [Ensembl website](https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache) with the necessary files located [here](https://ftp.ensembl.org/pub/release-107/variation/indexed_vep_cache/) for VEP 107|
-|**vep_cache_merged** |"TRUE" if VEP cache is merged, otherwise "FALSE"|
-|**vep_fasta** |VEP FASTA file with its path which can be downloaded [here](https://ftp.ensembl.org/pub/release-107/fasta/) for VEP 107|
-|**outdir** |Output directory|
-|**outfile** |Prefix for output files, will be the name of the PSAP null distributions file|
-|**unit** |Unit of testing to construct PSAP null distributions, can take the values "gene", "cadd_region" or "coding_cadd_region"|
-|**cadd_version** |Version of CADD to be used for annotation|
-|**assembly** |Both "GRCh37" and "GRCh38" options are currently supported|
-|**indel_file** |File with InDels annotated by CADD website or "NA". Column names of InDel file must be "#Chrom Pos Ref Alt RawScore PHRED" (format of CADD 1.6 InDel file)|
+|**score_max**|Maximal possible value of the pathogenicity score (70 for CADD) used to calibrate null distributions|
+|**genes**|bed file for the coordinates of genes coding regions. The file for GRCh37 is provided with the pipeline and a new one can be created using [BioMart](https://www.ensembl.org/info/data/biomart/index.html)|
+|**cadd_regions**|bed file for the coordinates of CADD regions. The file for GRCh37 is provided with the pipeline or can be downloaded [here](https://lysine.univ-brest.fr/RAVA-FIRST/)|
+|**vep_cache**|Directory of the VEP cache. Instructions on how to download the cache can be found on the [Ensembl website](https://www.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache) with the necessary files located [here](https://ftp.ensembl.org/pub/release-107/variation/indexed_vep_cache/) for VEP 107|
+|**vep_cache_merged**|"TRUE" if VEP cache is merged, otherwise "FALSE"|
+|**vep_fasta**|VEP FASTA file with its path which can be downloaded [here](https://ftp.ensembl.org/pub/release-107/fasta/) for VEP 107|
+|**outdir**|Output directory|
+|**outfile**|Prefix for output files, will be the name of the PSAP null distributions file|
+|**unit**|Unit of testing to construct PSAP null distributions, can take the values "gene", "cadd_region" or "coding_cadd_region"|
+|**cadd_version**|Version of CADD to be used for annotation|
+|**assembly**|Both "GRCh37" and "GRCh38" options are currently supported|
+|**compound_heterozygote_model**|TRUE or FALSE, if TRUE will calculate PSAP p-values for the compound heterozygote (CHET) model|
+|**hemizygote_model**|TRUE or FALSE, if TRUE will calculate PSAP p-values for the hemizygote model for males depending on the sex indicated in the ped file (HEM PSAP null distributions pre-calculated for genes only)|
+|**indel_file** File with InDels annotated by CADD website or "NA". Column names of InDel file must be "#Chrom Pos Ref Alt RawScore PHRED" (format of CADD 1.6 InDel file)|
+
+> For the hemizygote model: this option will calculate hemizygote model for males and AD/AR/CHET models for females on chrX. 
 
 > TIP: the user running the pipeline needs to have permission to write in the folder where the input vcf file is located. If not, the vcf file needs to already be indexed as the first step of the pipeline involves indexing the input vcf file. Suggested command for indexing a vcf file, using bcftools :
 
@@ -44,7 +49,7 @@ The VEP software is used for the vcf file annotation, without the need to instal
 bcftools index {vcf}
 ```
 
-WARNING: The input vcf file for the PSAP pipeline must only contain biallelic variants (multiallelic variants need to be split in different lines).
+> WARNING: The input vcf file for the PSAP pipeline must only contain biallelic variants (multiallelic variants need to be split in different lines).
 This process can be done using a tool like [VCFprocessor](https://lysine.univ-brest.fr/vcfprocessor/functions.html#splitmultiallelic) or during a Quality Control of the vcf file using a tool 
 like the [R package RAVAQ](https://gitlab.com/gmarenne/ravaq). We provide a script optional/qc_vcf.R to perform the recommended QC anf formatting for the vcf file. The script can be run using the command:
 
@@ -89,7 +94,7 @@ The Snakemake relies on conda environements which contain all the necessary depe
 This step is easily done using the following command line:
 
 ```
-snakemake --use-conda --conda-create-envs-only --conda-frontend conda
+snakemake --use-conda --conda-create-envs-only --conda-frontend conda -j 1 --configfile config/config.hg19.yaml
 ```
 
 ### 3. Run the pipeline.
@@ -97,7 +102,7 @@ snakemake --use-conda --conda-create-envs-only --conda-frontend conda
 Once the pipeline is configured and conda environments are created, the user just needs to run the Snakemake pipeline to score the vcf file with PSAP:
 
 ```
-snakemake --use-conda --conda-frontend conda -j 20 
+snakemake --use-conda --conda-frontend conda -j 20  --configfile config/config.hg19.yaml
 ```
 
 The mandatory arguments are:
@@ -136,7 +141,7 @@ Variants that were filtered out in the database used to calculate PSAP null dist
 
 This step carries out the main function of the pipepline, which is the calculation of PSAP p-values for variants in the vcf input file. These calculations are run by individual. Preprocessing steps harmonize the data between the vcf file
 and the VEP annotated file using the [gaston R package](https://cran.r-project.org/package=gaston). If an InDel CADD score file is provided, InDels are included in the analysis. Otherwise only autosomal SNVs are kept. Then, the variant with the maximal
-CADD score by unit of testing (gene, CADD region or coding CADD region) is scored with the PSAP null distribtion for the autosomal dominant (heterozygote variants) or recessive model (homozygote variants). Output located in `{outdir/annotated}`.
+CADD score by unit of testing (gene, CADD region or coding CADD region) is scored with the PSAP null distribtion for the autosomal dominant (heterozygote variants) or recessive model (homozygote variants). Additional models will be run if indicated in the configuration file, and can include the compound heterozygote and/or hemizygote models. Output located in `{outdir/annotated}`.
 
 ### 6. make_report_file
 

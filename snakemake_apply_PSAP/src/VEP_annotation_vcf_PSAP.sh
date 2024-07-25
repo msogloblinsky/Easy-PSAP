@@ -24,5 +24,10 @@ annotations="--show_ref_allele --variant_class --symbol  --plugin CADD,$CADD_PAT
 speed="--fork ${snakemake[threads]} --buffer_size ${snakemake_resources[mem]}" 
 options="$cache $speed --species $species --assembly $ASSEMBLY --fasta $fasta $annotations --use_given_ref --tab --compress_output bgzip"
 
-if [ $UNIT = "gene" ]; then vep $options --pick_allele_gene -i ${INPUT_FILE} -o ${OUTDIR}/annotated/${OUTFILE}.vep.tsv.gz ; fi 2> "${snakemake_log[0]}"
-if [ $UNIT = "cadd_region" ] || [ $UNIT == "coding_cadd_region" ] ; then vep $options --pick_allele -i ${INPUT_FILE} -o ${OUTDIR}/annotated/${OUTFILE}.vep.tsv.gz ; fi 2> "${snakemake_log[0]}"
+if [ "$UNIT" = "gene" ]
+then 
+	vep $options --pick_allele_gene -i ${INPUT_FILE} -o ${OUTDIR}/annotated/${OUTFILE}.vep.tsv.gz
+elif [ "$UNIT" == "cadd_region" ] || [ "$UNIT" == "coding_cadd_region" ]
+then 
+	vep $options --pick_allele -i ${INPUT_FILE} -o ${OUTDIR}/annotated/${OUTFILE}.vep.tsv.gz
+fi 2> "${snakemake_log[0]}"

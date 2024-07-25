@@ -45,6 +45,7 @@ if(chet_model){
 		exome.CHET$Dz.Model[which(exome.CHET$Geno == "chet_female")] = "X-linked-chet"}
 		lookup <-fread(file=paste(lookup_namefile,"_chet.txt.gz",sep=""),stringsAsFactors=FALSE,header=FALSE,data.table=FALSE)
 		exome.CHET$j<-findInterval(exome.CHET[,score],scale)+1
+		if(length(which(exome.CHET$j == 1402)) > 0){ exome.CHET[which(exome.CHET$j == 1402),] <- 1401}
 		exome.CHET$i<-as.integer(factor(exome.CHET[,unit_column],levels=lookup[,1]))
 		exome.CHET$PSAP<-unlist(apply(exome.CHET,1,function(x,tab) {i<-as.numeric(x["i"]); j<-as.numeric(x["j"]); y<-tab[i,j]; return(y)},lookup))
 		tmp.CHET <- do.call(rbind,by(exome.CHET,exome.CHET[,unit_column],function(x,score) { x[,score]<-as.numeric(x[,score]); x<-x[order(x[,score],decreasing=T,na.last=NA),]; return(x[1:2,]) },score=score)) 
@@ -63,8 +64,9 @@ if (gender == "male" & hem_model == TRUE){
 	exome.HEM <- subset(tmp, Geno == "hem") # for HEM mode
 	if (nrow(exome.HEM) > 0) {
 		exome.HEM$Dz.Model[which(exome.HEM$Geno == "hem" & (exome.HEM$Chr == "X" | exome.HEM$Chr == "chrX"))] <- "X-linked-hem"
-		lookup <- fread(file=paste(lookup_namefile,"_XY_hem_chrX.txt.gz",sep=""),stringsAsFactors=FALSE,header=FALSE,data.table=FALSE,select=1)
+		lookup <- fread(file=paste(lookup_namefile,"_hem_chrX.txt.gz",sep=""),stringsAsFactors=FALSE,header=FALSE,data.table=FALSE,select=1)
 		exome.HEM$j<-findInterval(exome.HEM[,"score_norm"],scale)+1
+		if(length(which(exome.HEM$j == 1402)) > 0){ exome.HEM[which(exome.HEM$j == 1402),] <- 1401}
 		exome.HEM$i<-as.integer(factor(exome.HEM[,gene_col],levels=lookup[,1]))
 		exome.HEM$PSAP<-unlist(apply(exome.HEM,1,function(x,tab) {i<-as.numeric(x["i"]); j<-as.numeric(x["j"]); y<-tab[i,j]; return(y)},lookup))
 		tmp.HEM <- exome.HEM %>% group_by(!!as.name(unit_column)) %>% filter(!!as.name(score)	== max(!!as.name(score))) %>% distinct(!!as.name(unit_column), .keep_all= TRUE) %>% arrange(!!as.name(unit_column)) %>% as.data.frame()

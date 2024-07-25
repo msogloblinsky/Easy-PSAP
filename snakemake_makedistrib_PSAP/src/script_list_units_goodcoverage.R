@@ -1,10 +1,10 @@
-args <- commandArgs(trailingOnly=TRUE)
+arg <- commandArgs(trailingOnly=TRUE)
 
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(splitstackshape))
 
-outdir <- args[1]
-af_prefix <- args[2]
+outdir <- arg[1]
+af_prefix <- arg[2]
 units <- c("gene","coding_cadd_region","cadd_region")
 
 for(i in 1:length(units)){
